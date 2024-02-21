@@ -17,6 +17,31 @@ paginate: true
 
 ---
 
+### Bibliografia
+
+- Glover, Fred W., and Gary A. Kochenberger, eds. **Handbook of metaheuristics**. Vol. 57. Springer Science & Business Media, 2006.
+- Talbi, El-Ghazali. **Metaheuristics: from design to implementation**. Vol. 74. John Wiley & Sons, 2009.
+- Michalewicz, Zbigniew, and David B. Fogel. **How to solve it: modern heuristics**. Springer Science & Business Media, 2013.
+
+---
+
+### Avaliação
+
+- **Provas Escritas:** Duas avaliações escritas ao longo do semestre. 
+- **Projeto Final:** Resolução de um problema de otimização combinatória utilizando metaheurísticas. 
+
+$$ Nota = \frac{p_1+p_2+pf}{3}$$
+
+---
+
+### Linguagem de Programação
+
+- Os exemplos e projetos serão desenvolvidos em **Python**. Embora não seja a linguagem adequada, é de fácil entendimento e rápida prototipação.
+- O projeto final pode ser desenvolvido em qualquer linguagem de programação "não obscura".
+- Tentaremos atingir o máximo de performance possível, mas sem otimizações extremas.
+
+---
+
 ## Por que Problemas de Otimização Combinatória são Relevantes?
 
 - **Aplicações Práticas:** Exemplos incluem roteamento de veículos, escalonamento de produção e design de redes.
@@ -34,6 +59,32 @@ paginate: true
 
 ---
 
+## Modelagem
+
+- O primeiro passo para resolver computacionalmente um problema real é sua modelagem.
+- Um modelo nunca será igual ao problema original, sempre haverão simplificações.
+- Um modelo útil deve ser simples o bastante para ser resolvido, e preciso o suficiente para que seu resultado possa ser aplicado.
+
+---
+
+<!-- _backgroundColor: black -->
+<!-- _color: white -->
+
+## "Todos os modelos são errados, mas alguns são úteis!"
+
+---
+
+## Otimização combinatória
+
+- Um problema combinatório é aquele cuja solução pode ser representada na forma de uma sequência de decisões discretas. 
+- Exemplos:
+    - Caminho mínimo.
+    - Árvore geradora mínima.
+    - Localização de facilidades.
+    - Roteirização de veículos. 
+
+---
+
 ## Abordagens para Resolver Problemas de Otimização Combinatória
 
 - **Métodos Exatos:** Algoritmos que garantem a solução ótima, mas podem ser inviáveis para problemas grandes.
@@ -41,7 +92,6 @@ paginate: true
 - **Heurísticas:** Técnicas que exploram informações específicas do problema para guiar a busca por soluções.
 - **Metaheurísticas:** Estratégias gerais e flexíveis que podem ser aplicadas a uma ampla variedade de problemas.
   
-
 ---
 
 ## Métodos Exatos

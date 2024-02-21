@@ -24,6 +24,7 @@ footer: '8 Rainhas - Metaheurísticas em Otimização Combinatória'
 - **Rainhas:** 8
 - **Objetivo:** Dispor as 8 rainhas de forma que nenhuma delas se ataque.
 - **Restrições:** Nenhuma rainha pode atacar outra na mesma linha, coluna ou diagonal.
+- **Generalização:** O problema pode ser generalizado para tabuleiros de tamanho $n \times n$ e $n$ rainhas.
 
 ---
 
@@ -109,6 +110,7 @@ def printar(solucao):
 ---
 
 ### Avançado
+
 - Vamos usar a biblioteca `matplotlib` 
 ```python
 import matplotlib.pyplot as plt
@@ -153,15 +155,16 @@ def avaliar(solucao):
     n = len(solucao)
     for i in range(n):
         for j in range(i+1, n):
-            if abs(solucao[i] - solucao[j]) == j - i:
-                ataques += 1
+            if solucao[i] > 0 and solucao[j] > 0:
+                if abs(solucao[i] - solucao[j]) == j - i:
+                    ataques += 1
     return ataques  
 ```
 ---
 ### Ovo de Colombo
 
 `abs(solucao[i] - solucao[j]) == j - i` 
-- é uma condição que verifica se duas rainhas estão na mesma diagonal.
+- É uma condição que verifica se duas rainhas estão na mesma diagonal.
 - Parece fácil, será que é mesmo?
 - Após encontrar soluções para problemas difíceis, eles parecem fáceis.
 
@@ -218,15 +221,13 @@ def forca_bruta_otimizada(n=8):
 def coloca(linha , coluna, solucao, usados):
     solucao[coluna] = linha
     usados[linha] = True
-    if ha_ataque(coluna, solucao):
-        usados[linha] = False
-        return False
-    if coluna == len(solucao) - 1:
-        return True
-    for i in range(len(solucao)):
-        if not usados[i]:
-            if coloca(i, coluna+1, solucao, usados):
-                return True
+    if not ha_ataque(coluna, solucao):        
+        if coluna == len(solucao) - 1:
+            return True
+        for i in range(len(solucao)):
+            if not usados[i]:
+                if coloca(i, coluna+1, solucao, usados):
+                    return True
     usados[linha] = False
     return False
 ```	
@@ -258,7 +259,205 @@ for n in range(8, 12):
     print()
 ```
 
+---
+## Abordagem Aleatória
+- Vamos gerar soluções aleatórias e avaliá-las.Se encontrarmos uma solução sem ataques, podemos parar a busca.
+- Vamos usar um limite de iterações para evitar que o algoritmo fique preso em um loop infinito.
+
+```python
+def aleatoria(n=8, max_iter=1000):
+    solucao = np.array(range(n), dtype=int)
+    melhor_solucao = np.array(range(n), dtype=int)    
+    menor_ataques = avaliar(melhor_solucao)
+    for _ in range(max_iter):
+        np.random.shuffle(solucao)
+        ataques = avaliar(solucao)
+        if ataques < menor_ataques:
+            menor_ataques = ataques
+            melhor_solucao = solucao
+            if ataques == 0:
+                break
+    return melhor_solucao
+```
+
+---
+
+### Vantagens e Desvantagens
+
+- **Vantagens:**
+  - Fácil de implementar.
+  - Rápido, o tempo de execução não aumentata tando com o incremento de `n`.
+  - O tempo de execução é controlável.
+  - Pode ser usado como ponto de partida para algoritmos mais sofisticados.
+
+- **Desvantagens:**
+  - Não garante a solução ótima.
+
+---
+
+ ## Abordagem Gulosa
+
+- Vamos usar uma abordagem gulosa para resolver o problema.
+- A ideia é colocar uma rainha em cada coluna, escolhendo a linha que minimiza o número de ataques.
+---
+
+```python
+def gulosa(n=8):
+    solucao = np.full(n,-1, dtype=int)
+    usadas = np.full(n, False, dtype=bool)
+    ataques = 0
+    for coluna in range(n):
+        melhor_linha = -1
+        menor_ataques = n
+        for linha in range(n):
+            if not usadas[linha]:
+                solucao[coluna] = linha
+                av = avaliar(solucao)
+                if av < menor_ataques:
+                    menor_ataques = av
+                    melhor_linha = linha
+                    if menor_ataques == ataques:
+                        break
+        solucao[coluna] = melhor_linha
+        usadas[melhor_linha] = True
+        ataques = menor_ataques
+    return solucao, ataques
+```
+
+---
+
+### Vantagens e Desvantagens
+
+- **Vantagens:**
+  - Rápido, o tempo de execução não aumentata tando com o incremento de `n`.
+  - O tempo de execução é controlável.
+  - Pode ser usado como ponto de partida para algoritmos mais sofisticados.
+- **Desvantagens:**
+  - Não garante a solução ótima.
+  - Gera sempre a mesma solução para um mesmo tabuleiro (determinístico).
+- Como podemos melhorar?
+
+## Gulosa Aleatorizada
+
+- Ao invés de seguir a ordem das colunas, vamos escolher aleatoriamente a ordem das colunas.
+- Também vamos escolher aleatoriamente a ordem das linhas para cada coluna.
+
+---
+
+```python
+def gulosa_randomizada(n=8):
+    solucao = np.full(n,-1, dtype=int)
+    usadas = np.full(n, False, dtype=bool)
+    limite_inferior = 0
+    colunas = np.arange(n)
+    linhas = np.arange(n)
+    np.random.shuffle(colunas)
+    for coluna in colunas:
+        melhor_linha = -1
+        menor_ataques = n
+        np.random.shuffle(linhas)
+        for linha in linhas:
+            if not usadas[linha]:
+                solucao[coluna] = linha
+                av = avaliar(solucao)
+                if av < menor_ataques:
+                    menor_ataques = av
+                    melhor_linha = linha
+                    if menor_ataques == limite_inferior:
+                        break
+        solucao[coluna] = melhor_linha
+        usadas[melhor_linha] = True            
+        limite_inferior = menor_ataques
+    return solucao, limite_inferior
+```
+
+---
+
+- Como cada execução do algoritmo gera uma solução diferente, podemos executá-lo várias vezes e escolher a melhor solução.
+
+```python
+def gulosa_randomizada_repetida(n=8, max_iter=100):
+    melhor_solucao = np.full(n,-1, dtype=int)
+    menor_ataques = n
+    for _ in range(max_iter):
+        solucao, ataques = gulosa_randomizada(n)
+        if ataques < menor_ataques:
+            menor_ataques = ataques
+            melhor_solucao = solucao
+            if ataques == 0:
+                break
+    return melhor_solucao, menor_ataques
+```
+
+---
+
+### Vantagens e Desvantagens
+
+- **Vantagens:**
+  - Rápido, o tempo de execução não aumentata tando com o incremento de `n`.
+  - O tempo de execução é controlável.
+  - Pode ser usado como ponto de partida para algoritmos mais sofisticados.
+  - Gera soluções diferentes para um mesmo tabuleiro (estocástico).
+- **Desvantagens:**
+  - Não garante a solução ótima.
+
+---  
+
+## Melhorando Uma Solução Existente
+
+- Uma outra abordagem é melhorar uma solução existente.
+- Vamos usar a abordagem gulosa para gerar uma solução inicial e depois melhorá-la.
+- Vamos tentar melhorar a solução trocando as posições de duas rainhas.
+
+```python
+def melhorar(solucao, ataques):
+    n = len(solucao)
+    for i in range(n):
+        for j in range(i+1, n):
+            solucao[i], solucao[j] = solucao[j], solucao[i]
+            novos_ataques = avaliar(solucao)
+            if novos_ataques < ataques:
+                return True, novos_ataques
+            solucao[i], solucao[j] = solucao[j], solucao[i]
+    return False, ataques
+```
+
+---
+
+### Ladeira Abaixo ou Colina acima
+
+- Por quê se contentar com uma melhoria?
+- Vamos continuar trocando as posições das rainhas até que não seja mais possível melhorar a solução.
+- Este tipo de algoritmo é chamado de **Método de descida** ou **Hill Climb**.
+
+```python   
+def hill_climb(solucao, ataques):
+    while True:
+        melhorou, ataques = melhorar(solucao, ataques)
+        if not melhorou:
+            break
+    return solucao, ataques
+```
+---
+
+### Vantagens e Desvantagens
+
+- **Vantagens:**
+  - Consegue melhorar soluções existentes e obter soluções de boa qualidade mesmo para valores maiores de `n`. 
+  - Podemos repetir o algoritmo várias vezes, usando soluções inicias diferentes, e escolher a melhor solução.
+- **Desvantagens:**
+  - Não garante a solução ótima.
 
 
+---
+## Conclusão
 
+- O problema das 8 rainhas é um problema clássico de otimização combinatória.
+- Existem várias abordagens para resolvê-lo, desde métodos exatos até métodos heurísticos.
+- Métodos exatos garantem a solução ótima, mas podem ser inviáveis para problemas grandes.
+- Métodos heurísticos e metaheurísticas oferecem abordagens poderosas para enfrentar problemas desafiadores de otimização combinatória.
+- Poderiamos ir mais longe, mas chega de 8 rainhas.
 
+---
+
+# Obrigado!
