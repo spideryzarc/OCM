@@ -34,6 +34,10 @@ footer: '8 Rainhas - Metaheurísticas em Otimização Combinatória'
 
 ---
 
+![bg  fit   ](images/tabuleiro.png)
+
+---
+
 ## Implementação em Python
 
 - Funções preliminares
