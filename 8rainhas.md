@@ -6,7 +6,9 @@ title: 8 Rainhas
 footer: '8 Rainhas - Metaheurísticas em Otimização Combinatória'
 ---
 
-# 8 Rainhas
+# Problema das 8 Rainhas
+
+![bg left   ](images/queen1.jpeg)
 
 ---
 
@@ -15,6 +17,8 @@ footer: '8 Rainhas - Metaheurísticas em Otimização Combinatória'
 - **Propósito:** Encontrar uma disposição das 8 rainhas em um tabuleiro de xadrez de forma que nenhuma delas se ataque.
 - **Relevância:** Problema clássico de otimização combinatória, com aplicações em jogos e algoritmos genéticos.
 - **Abordagem:** Utilização de métodos exatos e heurísticos para encontrar soluções viáveis.
+
+![bg right:30%   ](images/queen2.jpeg)
   
 --- 
 
