@@ -30,6 +30,8 @@ footer: '8 Rainhas - Metaheurísticas em Otimização Combinatória'
 - **Restrições:** Nenhuma rainha pode atacar outra na mesma linha, coluna ou diagonal.
 - **Generalização:** O problema pode ser generalizado para tabuleiros de tamanho $n \times n$ e $n$ rainhas.
 
+![bg left:30%   ](images/queen3.jpeg)
+
 ---
 
 ## Implementação em Python
@@ -252,7 +254,7 @@ def ha_ataque(coluna, solucao):
 ### Comparação de Desempenho
 
 - Vamos comparar o desempenho das duas funções.
-- Vamos usar a função mágica `%timeit` do Jupyter para medir o tempo de execução.
+- Vamos usar a função `%timeit` do Jupyter para medir o tempo de execução.
 - Os parâmetros `-n1 -r3` indicam que a função será executada uma vez em cada repetição, e que serão feitas 3 repetições.
 
 ```python

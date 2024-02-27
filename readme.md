@@ -1,0 +1,1 @@
+Este repositório é destinado a armazenar slides, códigos e materiais de apoio para as aulas de Otimização combinatória e metaheurísticas.
