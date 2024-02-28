@@ -195,7 +195,7 @@ def forca_bruta(n=8):
         ataques = avaliar(solucao)
         if ataques < menor_ataques:
             menor_ataques = ataques
-            melhor_solucao = solucao
+            melhor_solucao[:] = solucao[:]
             if ataques == 0:
                 break
     return melhor_solucao
@@ -284,7 +284,7 @@ def aleatoria(n=8, max_iter=1000):
         ataques = avaliar(solucao)
         if ataques < menor_ataques:
             menor_ataques = ataques
-            melhor_solucao = solucao
+            melhor_solucao[:] = solucao[:]
             if ataques == 0:
                 break
     return melhor_solucao
@@ -347,6 +347,8 @@ def gulosa(n=8):
   - Gera sempre a mesma solução para um mesmo tabuleiro (determinístico).
 - Como podemos melhorar?
 
+---
+
 ## Gulosa Aleatorizada
 
 - Ao invés de seguir a ordem das colunas, vamos escolher aleatoriamente a ordem das colunas.
@@ -393,7 +395,7 @@ def gulosa_randomizada_repetida(n=8, max_iter=100):
         solucao, ataques = gulosa_randomizada(n)
         if ataques < menor_ataques:
             menor_ataques = ataques
-            melhor_solucao = solucao
+            melhor_solucao[:] = solucao[:]
             if ataques == 0:
                 break
     return melhor_solucao, menor_ataques
@@ -424,14 +426,32 @@ def melhorar(solucao, ataques):
     n = len(solucao)
     for i in range(n):
         for j in range(i+1, n):
+            d0 = avaliar_ij(solucao, i, j)
+            if d0 == 0:
+                continue
             solucao[i], solucao[j] = solucao[j], solucao[i]
-            novos_ataques = avaliar(solucao)
-            if novos_ataques < ataques:
-                return True, novos_ataques
+            delta = avaliar_ij(solucao, i, j) - d0
+            if delta < 0:
+                return True, ataques + delta
             solucao[i], solucao[j] = solucao[j], solucao[i]
     return False, ataques
 ```
 
+---
+
+- A função `avaliar_ij` é uma versão modificada da função `avaliar` que conta apenas os ataques entre as rainhas `i` e `j` contra as outras rainhas.
+
+```python
+def avaliar_ij(solucao, i, j):
+    ataques = 1 if abs(solucao[i] - solucao[j]) == j-i else 0    
+    for k in range(len(solucao)):
+        if k != i and k != j:
+            if abs(solucao[i] - solucao[k]) == abs(i-k): 
+                ataques += 1
+            if abs(solucao[j] - solucao[k]) == abs(j-k):
+                ataques += 1
+    return ataques
+```
 ---
 
 ### Ladeira Abaixo ou Colina acima
