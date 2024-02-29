@@ -162,3 +162,4 @@ paginate: true
   - Reinicialização para reiniciar a busca a partir de soluções diferentes.
 
 
+https://scipbook.readthedocs.io/en/latest/flp.html
