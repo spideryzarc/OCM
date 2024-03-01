@@ -2,45 +2,73 @@ import numpy as np
 
 
 class FLP:
-    '''Facility Location Problem    
+    '''Single Source Capacitated Facility Location Problem (SSCFLP)
+    or Warehouse Location Problem (WLP)
     '''
 
     def __init__(self, **args):
-        if 'n' in args:
+        if 'filename' in args:
+            self.read_file(args['filename'])
+        elif 'n' in args:
             # n: number of customers
             self.n = args['n']
             # m: number of facilities
             self.m = args.get('m', 0)
+            # demand: array of size n with the demand of each customer
             self.demand = np.zeros(self.n, dtype=int)
+            # supply: array of size m with the supply/capacity of each facility
             self.supply = np.zeros(self.m, dtype=int)
+            # opening_cost: array of size m with the cost of opening each facility
             self.opening_cost = np.zeros(self.m, dtype=int)
-            self.capacity = np.zeros(self.m, dtype=int)
-            self.transport_cost = np.zeros((self.n, self.m), dtype=int)
-        elif 'filename' in args:
-            self.read_file(args['filename'])
+            # assignment_cost: array of size (n, m) with the cost of assigning each customer to each facility
+            self.assignment_cost = np.zeros((self.n, self.m), dtype=float) 
         else:
             raise ValueError('Invalid arguments')
 
     def read_file(self, filename):
         with open(filename, 'r') as f:
-            self.n, self.m = map(int, f.readline().split())
-            self.demand = np.array(list(map(int, f.readline().split())))
-            self.supply = np.array(list(map(int, f.readline().split())))
-            self.opening_cost = np.array(list(map(int, f.readline().split())))
-            self.capacity = np.array(list(map(int, f.readline().split())))
-            self.transport_cost = np.array(
-                [list(map(int, f.readline().split())) for _ in range(self.n)])
+            self.m, self.n = map(int, f.readline().split())
+            self.supply = np.zeros(self.m, dtype=int)
+            self.opening_cost = np.zeros(self.m, dtype=int)
+            for i in range(self.m):
+                self.supply[i], self.opening_cost[i] = map(int, f.readline().split())
+            v = []
+            while len(v) < self.n:
+                v.extend(map(int,map(float, f.readline().split())))
+            self.demand = np.array(v[:self.n], dtype=int)
+           
+            self.assignment_cost = np.zeros((self.n, self.m), dtype=float)
+            for i in range(self.n):
+                v = []
+                while len(v) < self.m:
+                    v.extend(map(float, f.readline().split()))
+                self.assignment_cost[i, :] = v[:self.m]
+
 
     def write_file(self, filename):
         with open(filename, 'w') as f:
-            f.write(f'{self.n} {self.m}\n')
+            f.write(f'{self.m} {self.n}\n')
+            for i in range(self.m):
+                f.write(f'{self.supply[i]} {self.opening_cost[i]}\n')
             f.write(' '.join(map(str, self.demand)) + '\n')
-            f.write(' '.join(map(str, self.supply)) + '\n')
-            f.write(' '.join(map(str, self.opening_cost)) + '\n')
-            f.write(' '.join(map(str, self.capacity)) + '\n')
             for i in range(self.n):
-                f.write(' '.join(map(str, self.transport_cost[i])) + '\n')
+                f.write(' '.join(map(str, self.assignment_cost[i])) + '\n')
 
+    def __str__(self):
+        s = f'Number of facilities: {self.m}\n'
+        s += f'Number of customers: {self.n}\n'
+        s += 'Demand: ' + ' '.join(map(str, self.demand)) + '\n'
+        s += 'Supply: ' + ' '.join(map(str, self.supply)) + '\n'
+        s += 'Opening cost: ' + ' '.join(map(str, self.opening_cost)) + '\n'
+        s += 'Assignment cost:\n'
+        for i in range(self.n):
+            s += ' '.join(map(str, self.assignment_cost[i])) + '\n'
+        return s
+    
+
+
+
+###### Solution ######
 
 class FLP_Solution:
     '''Facility Location Problem Solution
@@ -48,51 +76,55 @@ class FLP_Solution:
 
     def __init__(self, flp: FLP, filename=None):
         self.flp = flp
+        # facility opened or not 0/1
         self.opened = np.zeros(flp.m, dtype=int)
-        self.transported = np.zeros((flp.n, flp.m), dtype=float)
+        # facility assigned to each customer
+        self.assigned = np.zeros(flp.n, dtype=int)
+        # objective function value
         self.objective = 0
         if filename:
             self.read_file(filename)
 
-    def evaluate(self):
-        self.objective = self.opened @ self.flp.opening_cost
-        self.objective += np.sum(self.transported * self.flp.transport_cost)
-        return self.objective
-    
-    def is_feasible(self):
-        for j in range(self.flp.m):
-            if self.opened[j] == 1 and np.sum(self.transported[:, j]) > self.flp.capacity[j]:
-                return False
-        if np.any(np.sum(self.transported, axis=1) < self.flp.demand):
-            return False
-        return True
-
-    def __str__(self):
-        s = f'Objective: {self.objective}\n'
-        s += 'Opened: ' + ' '.join(map(str, self.opened)) + '\n'
-        s += 'Transported:\n'
-        for i in range(self.flp.n):
-            s += ' '.join(map(str, self.transported[i])) + '\n'
-        return s
+    def read_file(self, filename):
+        with open(filename, 'r') as f:
+            self.opened = np.array(list(map(int, f.readline().split())))
+            self.assigned = np.array(list(map(int, f.readline().split())))
+            self.objective = float(f.readline())
 
     def write_file(self, filename):
         with open(filename, 'w') as f:
-            f.write(f'{self.objective}\n')
             f.write(' '.join(map(str, self.opened)) + '\n')
-            for i in range(self.flp.n):
-                f.write(' '.join(map(str, self.transported[i])) + '\n')
+            f.write(' '.join(map(str, self.assigned)) + '\n')
+            f.write(f'{self.objective}\n')
 
-    def read_file(self, filename):
-        with open(filename, 'r') as f:
-            obj = int(f.readline())
-            self.opened = np.array(
-                list(map(int, f.readline().split())), dtype=int)
-            self.transported = np.array(
-                [list(map(int, f.readline().split())) for _ in range(self.flp.n)])
-        if self.transported.shape != (self.flp.n, self.flp.m):
-            raise ValueError('Invalid solution shape')
-        if not self.is_feasible():
-            raise ValueError('Infesible solution')
-        self.evaluate()
-        if self.objective != obj:
-            raise ValueError('Invalid objective value')
+    def __str__(self):
+        s = 'Opened: ' + ' '.join(map(str, self.opened)) + '\n'
+        s += 'Assigned: ' + ' '.join(map(str, self.assigned)) + '\n'
+        s += f'Objective: {self.objective}\n'
+        return s
+    
+    def evaluate(self):
+        self.objective = self.flp.opening_cost @ self.opened
+        for i in range(self.flp.n):
+            self.objective += self.flp.assignment_cost[i, self.assigned[i]]
+        return self.objective
+
+    def is_valid(self):
+        '''Check if the solution is valid'''
+        # check if each customer was assigned to a facility
+        if np.any(self.assigned < 0) or np.any(self.assigned >= self.flp.m):
+            return False
+        # check if the demand of each customer is not greater than the supply of the facility
+        demand = np.zeros(self.flp.m, dtype=int)
+        for i in range(self.flp.n):
+            demand[self.assigned[i]] += self.flp.demand[i]
+        if np.any(demand > self.flp.supply):
+            return False        
+        return True
+    
+#### main ####
+        
+if __name__ == '__main__':
+    flp = FLP(filename='codes\instances\p1')
+    print(flp)
+
