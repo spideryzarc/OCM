@@ -77,37 +77,41 @@ class FLP_Solution:
 
     def __init__(self, flp: FLP, filename=None):
         self.flp = flp
-        # facility opened or not 0/1
-        self.opened = np.zeros(flp.num_facilities, dtype=bool)
+        # how many costumers are assigned to each facility. facility closed if 0 costumers are assigned
+        self.facility_customers_count = np.zeros(flp.num_facilities, dtype=int)
         # facility assigned to each customer
         self.assigned = np.full(flp.num_customers, -1, dtype=int)
         # objective function value
         self.objective = np.inf
+        # available facilities capacity
+        self.capacity = flp.supply.copy()
         if filename:
             self.read_file(filename)
 
     def read_file(self, filename):
         with open(filename, 'r') as f:
-            self.opened[:] = list(map(bool, f.readline().split()))[:]
+            self.facility_customers_count[:] = list(
+                map(int, f.readline().split()))[:]
             self.assigned[:] = list(map(int, f.readline().split()))[:]
             self.objective = float(f.readline())
 
     def write_file(self, filename):
         with open(filename, 'w') as f:
-            f.write(' '.join(map(str, self.opened)) + '\n')
+            f.write(' '.join(map(str, self.facility_customers_count)) + '\n')
             f.write(' '.join(map(str, self.assigned)) + '\n')
             f.write(f'{self.objective}\n')
 
     def __str__(self):
         s = 'Opened: ' + \
-            ' '.join([str(i) for i in range(self.flp.num_facilities)
-                     if self.opened[i]]) + '\n'
+            ' '.join([str((i,self.capacity[i])) for i in range(self.flp.num_facilities)
+                     if self.facility_customers_count[i] > 0]) + '\n'
         s += 'Assigned: ' + ' '.join(map(str, self.assigned)) + '\n'
         s += f'Objective: {self.objective}\n'
         return s
 
     def evaluate(self):
-        self.objective = self.flp.opening_cost @ self.opened
+        self.objective = np.sum(
+            self.flp.opening_cost[np.where(self.facility_customers_count > 0)])
         for i in range(self.flp.num_customers):
             self.objective += self.flp.assignment_cost[self.assigned[i], i]
         return self.objective
@@ -118,13 +122,24 @@ class FLP_Solution:
         if np.any(self.assigned < 0) or np.any(self.assigned >= self.flp.num_facilities):
             print('Invalid assignment')
             return False
-        # check if the demand of each customer is not greater than the supply of the facility
-        demand = np.zeros(self.flp.num_facilities, dtype=int)
+        # check if capacity is  correct
+        capacity = self.flp.supply.copy()
         for i in range(self.flp.num_customers):
-            demand[self.assigned[i]] += self.flp.demand[i]
-        if np.any(demand > self.flp.supply):
-            print('Invalid supply')
+            capacity[self.assigned[i]] -= self.flp.demand[i]
+        if np.any(capacity < 0):
+            print('Capacity exceeded')
             return False
+        if np.any(capacity != self.capacity):
+            print('Invalid capacity assignment')
+            return False
+        # check if costumer counter is correct
+        counter = np.zeros(self.flp.num_facilities, dtype=int)
+        for j in self.assigned:
+            counter[j] += 1
+        if np.any(counter != self.facility_customers_count):
+            print('Invalid facility_customers_count')
+            return False
+
         return True
 
 
@@ -151,21 +166,24 @@ class ConstructionHeuristics:
         if sol is None:
             sol = FLP_Solution(self.flp)
         else:
-            sol.opened[:] = False
             sol.assigned[:] = -1
         for _ in range(max_tries):
+            sol.capacity[:] = self.flp.supply[:]
             for i in range(self.flp.num_customers):
                 sol.assigned[i] = np.random.randint(self.flp.num_facilities)
-            for j in sol.assigned:
-                sol.opened[j] = 1
-            if sol.is_valid():
+                sol.capacity[sol.assigned[i]] -= self.flp.demand[i]
+                if sol.capacity[sol.assigned[i]] < 0:
+                    break
+            else:
+                sol.facility_customers_count[:] = 0
+                for j in sol.assigned:
+                    sol.facility_customers_count[j] += 1
                 sol.evaluate()
-                break
-        else:
-            return None
-        return sol
+                assert sol.is_valid(), 'Invalid solution'  # should not happen
+                return sol        
+        return None
 
-    def greedy(self, sol=None, rd_opening = False):
+    def greedy(self, sol=None, rd_opening=False):
         '''Create a solution by a greedy heuristic, 
         each customer is assigned to the facility with the lowest cost, 
         considering the opening cost and the assignment cost, 
@@ -179,18 +197,19 @@ class ConstructionHeuristics:
         if sol is None:
             sol = FLP_Solution(self.flp)
         else:
-            sol.opened[:] = False
             sol.assigned[:] = -1
 
+        objective = 0
         if rd_opening:
             np.random.shuffle(self.facilities)
             supply = 0
             for j in self.facilities:
-                sol.opened[j] = True
+                sol.facility_customers_count[j] = 1
+                objective += self.flp.opening_cost[j]
                 supply += self.flp.supply[j]
                 if supply >= self.total_demand:
                     break
-        capacity = self.flp.supply.copy()
+        sol.capacity[:] = self.flp.supply[:]
         for _ in range(self.flp.num_customers):
             best = np.inf
             arg_cos = -1
@@ -199,20 +218,164 @@ class ConstructionHeuristics:
                 if sol.assigned[i] >= 0:
                     continue
                 for j in self.facilities:
-                    if capacity[j] >= self.flp.demand[i]:
+                    if sol.capacity[j] >= self.flp.demand[i]:
                         cost = self.flp.assignment_cost[j, i]
-                        if not sol.opened[j]:
+                        if not sol.facility_customers_count[j]:
                             cost += self.flp.opening_cost[j]
                         if cost < best:
                             best = cost
                             arg_cos = i
                             arg_fac = j
             sol.assigned[arg_cos] = arg_fac
-            sol.opened[arg_fac] = True
-            capacity[arg_fac] -= self.flp.demand[arg_cos]
-        assert sol.is_valid(), 'Invalid solution' # should not happen
-        sol.evaluate()
+            sol.facility_customers_count[arg_fac] = 1
+            objective += best
+            sol.capacity[arg_fac] -= self.flp.demand[arg_cos]
+        # ajust facility_customers_count
+        sol.facility_customers_count[:] = 0
+        for j in sol.assigned:
+            sol.facility_customers_count[j] += 1
+        # check if the solution is valid
+        assert sol.is_valid(), 'Invalid solution'  # should not happen
+        assert np.isclose(objective, sol.evaluate()
+                          ), 'Invalid objective'  # should not happen
+        sol.objective = objective
         return sol
+
+
+class LocalSearch:
+    '''Local Search for Facility Location Problem
+    '''
+
+    def __init__(self, flp: FLP):
+        self.flp = flp
+        # indices of customers and facilities for shoffle operations
+        self.costumers = np.arange(flp.num_customers)
+        # indices of customers and facilities for shoffle operations
+        self.facilities = np.arange(flp.num_facilities)
+
+
+    def two_opt(self, sol: FLP_Solution, shuffle=True, first_improvement=True):
+        ''' Try to improve the solution by swapping two customers between two facilities,
+        if find a better solution, then sol is updated.
+        Parameters:
+            sol: FLP_Solution - the solution to be improved
+            shuffle: bool (default True) if True the customers and facilities are shuffled before the search
+            first_improvement: bool (default True) if True the search stops at the first improvement
+        Returns:
+            bool - True if the solution was improved, False otherwise            
+            '''
+        if shuffle:
+            np.random.shuffle(self.costumers)
+            np.random.shuffle(self.facilities)
+        
+        best = 0
+        arg_i = -1
+        arg_j = -1
+        for i in self.costumers:
+            for j in self.costumers:
+                if i >= j:
+                    # avoid duplicate pairs
+                    continue
+                if sol.assigned[i] == sol.assigned[j]:
+                    # same facility
+                    continue
+                if sol.capacity[sol.assigned[i]] - self.flp.demand[i] < self.flp.demand[j] or sol.capacity[sol.assigned[j]] - self.flp.demand[j] < self.flp.demand[i]:
+                    # capacity constraint
+                    continue
+                delta = self.flp.assignment_cost[sol.assigned[j], i] + self.flp.assignment_cost[sol.assigned[i], j] \
+                    - self.flp.assignment_cost[sol.assigned[i], i] - \
+                    self.flp.assignment_cost[sol.assigned[j], j]
+                if delta < 0:
+                    if first_improvement:
+                        demand_delta = self.flp.demand[i] - self.flp.demand[j]
+                        sol.capacity[sol.assigned[i]] += demand_delta
+                        sol.capacity[sol.assigned[j]] -= demand_delta
+                        sol.assigned[i], sol.assigned[j] = sol.assigned[j], sol.assigned[i]
+                        assert sol.is_valid(), 'Invalid solution'  # should not happen
+                        new_obj = sol.objective + delta
+                        # should not happen
+                        assert np.isclose(
+                            new_obj, sol.evaluate()), 'Invalid objective'
+                        sol.objective = new_obj
+                        return True
+                    if delta < best:
+                        best = delta
+                        arg_i = i
+                        arg_j = j
+        if arg_i >= 0:
+            demand_delta = self.flp.demand[arg_i] - self.flp.demand[arg_j]
+            sol.capacity[sol.assigned[arg_i]] += demand_delta
+            sol.capacity[sol.assigned[arg_j]] -= demand_delta            
+            sol.assigned[arg_i], sol.assigned[arg_j] = sol.assigned[arg_j], sol.assigned[arg_i]
+            assert sol.is_valid(), 'Invalid solution'
+            new_obj = sol.objective + best
+            assert np.isclose(new_obj, sol.evaluate()), 'Invalid objective'
+            sol.objective = new_obj
+            return True
+        return False
+
+    def replace(self, sol: FLP_Solution, shuffle=True, first_improvement=True):
+        ''' Try to improve the solution by replacing a customer from one facility to another,
+        if find a better solution, then sol is updated.
+        Parameters:
+            sol: FLP_Solution - the solution to be improved
+            shuffle: bool (default True) if True the customers and facilities are shuffled before the search
+            first_improvement: bool (default True) if True the search stops at the first improvement
+        Returns:
+            bool - True if the solution was improved, False otherwise            
+            '''
+        if shuffle:
+            np.random.shuffle(self.costumers)
+            np.random.shuffle(self.facilities)
+        
+        best = 0
+        arg_i = -1
+        arg_j = -1
+        for i in self.costumers:
+            for j in self.facilities:
+                if j == sol.assigned[i]:
+                    # same facility
+                    continue
+                if sol.capacity[j] < self.flp.demand[i]:
+                    # capacity constraint
+                    continue
+                delta = self.flp.assignment_cost[j, i] - \
+                    self.flp.assignment_cost[sol.assigned[i], i]
+                if sol.facility_customers_count[sol.assigned[i]] == 1:
+                    # facility will be closed
+                    delta -= self.flp.opening_cost[sol.assigned[i]]
+                if sol.facility_customers_count[j] == 0:
+                    # facility will be opened
+                    delta += self.flp.opening_cost[j]
+                if delta < 0:
+                    if first_improvement:
+                        sol.facility_customers_count[j] += 1
+                        sol.facility_customers_count[sol.assigned[i]] -= 1
+                        sol.capacity[sol.assigned[i]] += self.flp.demand[i]
+                        sol.capacity[j] -= self.flp.demand[i]
+                        sol.assigned[i] = j
+                        assert sol.is_valid(), 'Invalid solution'
+                        new_obj = sol.objective + delta
+                        assert np.isclose(
+                            new_obj, sol.evaluate()), 'Invalid objective'
+                        sol.objective = new_obj
+                        return True
+                    if delta < best:
+                        best = delta
+                        arg_i = i
+                        arg_j = j
+        if arg_i >= 0:
+            sol.facility_customers_count[arg_j] += 1
+            sol.facility_customers_count[sol.assigned[arg_i]] -= 1
+            sol.capacity[sol.assigned[arg_i]] += self.flp.demand[arg_i]
+            sol.capacity[arg_j] -= self.flp.demand[arg_i]
+            sol.assigned[arg_i] = arg_j
+            assert sol.is_valid(), 'Invalid solution'
+            new_obj = sol.objective + best
+            assert np.isclose(new_obj, sol.evaluate()), 'Invalid objective'
+            sol.objective = new_obj
+            return True
+        return False
 
 
 #### main ####
@@ -222,14 +385,10 @@ if __name__ == '__main__':
     ch = ConstructionHeuristics(flp)
     sol = ch.random_assignment_solution()
     print(sol)
-    sol = ch.greedy()    
+    sol = ch.greedy()
     print(sol)
     sol = ch.greedy(rd_opening=True)
     print(sol)
-    best = sol.objective
-    for i in range(1000):
-        sol = ch.greedy(rd_opening=True,sol=sol)
-        if best > sol.objective:
-            best = sol.objective
-            print(i, sol)
-        
+    ls = LocalSearch(flp)
+    while ls.replace(sol, first_improvement=False) or ls.two_opt(sol, first_improvement=False):
+        print('** ', sol)
