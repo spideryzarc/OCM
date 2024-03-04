@@ -110,10 +110,8 @@ class FLP_Solution:
         return s
 
     def evaluate(self):
-        self.objective = np.sum(
-            self.flp.opening_cost[np.where(self.facility_customers_count > 0)])
-        for i in range(self.flp.num_customers):
-            self.objective += self.flp.assignment_cost[self.assigned[i], i]
+        self.objective = np.sum(np.where(self.facility_customers_count > 0, self.flp.opening_cost, 0))
+        self.objective += np.sum(self.flp.assignment_cost[self.assigned, np.arange(self.flp.num_customers)])
         return self.objective
 
     def is_valid(self):
@@ -175,9 +173,7 @@ class ConstructionHeuristics:
                 if sol.capacity[sol.assigned[i]] < 0:
                     break
             else:
-                sol.facility_customers_count[:] = 0
-                for j in sol.assigned:
-                    sol.facility_customers_count[j] += 1
+                sol.facility_customers_count[:] = np.bincount(sol.assigned, minlength=self.flp.num_facilities)
                 sol.evaluate()
                 assert sol.is_valid(), 'Invalid solution'  # should not happen
                 return sol        
@@ -231,9 +227,7 @@ class ConstructionHeuristics:
             objective += best
             sol.capacity[arg_fac] -= self.flp.demand[arg_cos]
         # ajust facility_customers_count
-        sol.facility_customers_count[:] = 0
-        for j in sol.assigned:
-            sol.facility_customers_count[j] += 1
+        sol.facility_customers_count[:] = np.bincount(sol.assigned, minlength=self.flp.num_facilities)
         # check if the solution is valid
         assert sol.is_valid(), 'Invalid solution'  # should not happen
         assert np.isclose(objective, sol.evaluate()
