@@ -152,6 +152,10 @@ class BruteForce:
                 best.objective = working.objective
                 best.facility_customers_count[:] = working.facility_customers_count
                 best.assigned[:] = working.assigned
+                best.remaining[:] = working.remaining
+                print('bf',best.objective)
+                assert best.is_valid(), 'Invalid solution'  # should not happen
+                assert np.isclose(working.objective, best.evaluate()), 'Invalid objective'  # should not happen
             return
         if working.remaining[j] >= self.flp.demand[i]:
             working.assigned[i] = j
@@ -180,6 +184,7 @@ class BruteForce:
         for j in self.facilities:
             self.tries(0, j, best, working)
         return best
+    
 class ConstructionHeuristics:
     '''Construction Heuristics for Facility Location Problem
     '''
@@ -204,18 +209,27 @@ class ConstructionHeuristics:
             sol = FLP_Solution(self.flp)
         else:
             sol.assigned[:] = -1
+        sol.objective = np.inf
+        working = FLP_Solution(self.flp)
         for _ in range(max_tries):
-            sol.remaining[:] = self.flp.supply[:]
+            working.remaining[:] = self.flp.supply
             for i in range(self.flp.num_customers):
-                sol.assigned[i] = np.random.randint(self.flp.num_facilities)
-                sol.remaining[sol.assigned[i]] -= self.flp.demand[i]
-                if sol.remaining[sol.assigned[i]] < 0:
+                working.assigned[i] = np.random.randint(self.flp.num_facilities)
+                working.remaining[working.assigned[i]] -= self.flp.demand[i]
+                if working.remaining[working.assigned[i]] < 0:
                     break
             else:
-                sol.facility_customers_count[:] = np.bincount(sol.assigned, minlength=self.flp.num_facilities)
-                sol.evaluate()
-                assert sol.is_valid(), 'Invalid solution'  # should not happen
-                return sol        
+                working.facility_customers_count[:] = np.bincount(working.assigned, minlength=self.flp.num_facilities)
+                working.evaluate()
+                assert working.is_valid(), 'Invalid solution'  # should not happen
+                if working.objective < sol.objective:
+                    print('ch',working.objective)
+                    sol.objective = working.objective
+                    sol.facility_customers_count[:] = working.facility_customers_count
+                    sol.assigned[:] = working.assigned
+                    sol.remaining[:] = working.remaining
+        if sol.objective < np.inf:
+            return sol        
         return None
 
     def greedy(self, sol=None, rd_opening=False):
@@ -255,7 +269,7 @@ class ConstructionHeuristics:
                 for j in self.facilities:
                     if sol.remaining[j] >= self.flp.demand[i]:
                         cost = self.flp.assignment_cost[j, i]
-                        if not sol.facility_customers_count[j]:
+                        if sol.facility_customers_count[j] == 0:
                             cost += self.flp.opening_cost[j]
                         if cost < best:
                             best = cost
@@ -415,14 +429,17 @@ class LocalSearch:
 if __name__ == '__main__':
     flp = FLP(filename='codes/instances/p1')
     print(flp)
-    
-    # ch = ConstructionHeuristics(flp)
-    # sol = ch.random_assignment_solution()
+    # bf = BruteForce(flp)
+    # sol = bf.solve()
     # print(sol)
+    
+    ch = ConstructionHeuristics(flp)
+    sol = ch.random_assignment_solution(max_tries=1000)
+    print(sol)
     # sol = ch.greedy()
     # print(sol)
     # sol = ch.greedy(rd_opening=True)
     # print(sol)
-    # ls = LocalSearch(flp)
-    # while ls.replace(sol, first_improvement=False) or ls.two_opt(sol, first_improvement=False):
-    #     print('** ', sol)
+    ls = LocalSearch(flp)
+    while ls.two_opt(sol, first_improvement=False):
+        print('** ', sol)
