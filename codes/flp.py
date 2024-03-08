@@ -1,4 +1,5 @@
 import numpy as np
+import time
 
 
 class FLP:
@@ -188,8 +189,14 @@ class BruteForce:
         self.flp = flp
         self.costumers = np.arange(flp.num_customers)
         self.facilities = np.arange(flp.num_facilities)
+        self.stop_time = np.inf
 
     def tries(self, i, j, best: FLP_Solution, working: FLP_Solution):
+        '''Try to assign customer i to facility j and then try to assign the next customer recursively'''
+        # stop if time is over
+        if time.time() > self.stop_time:
+            return
+
         # if facility j has enough capacity to attend customer i
         if working.remaining[j] >= self.flp.demand[i]:
             # assign customer i to facility j
@@ -205,28 +212,36 @@ class BruteForce:
                         self.tries(i+1, k, best, working)
                 elif working.objective < best.objective:
                     # update best solution
-                    best.objective = working.objective
-                    best.facility_customers_count[:] = working.facility_customers_count
-                    best.assigned[:] = working.assigned
-                    best.remaining[:] = working.remaining
+                    best.copy_from(working)
                     print('bf', best.objective)
                     assert best.is_valid(), 'Invalid solution'  # should not happen
             # undo assignment
             working.unassign(i)
         return
 
-    def solve(self):
+    def solve(self, timeout=None):
+        '''Solve the problem by brute force, trying all possible assignments
+        Parameters:
+            timeout: int or None (default None) maximum time in seconds to run the algorithm
+        Returns:
+            FLP_Solution - the best solution found
+        '''
+        
+        if timeout:
+            self.stop_time = time.time() + timeout
+
         best = FLP_Solution(self.flp)
         best.objective = np.inf
         working = FLP_Solution(self.flp)
         working.reset()
 
-
         # sort facilities by assignment cost to the customer 0
         facilities = sorted(
             self.facilities, key=lambda j: self.flp.assignment_cost[j, 0])
+    
         for j in facilities:
             self.tries(0, j, best, working)
+    
         return best
 
 
@@ -236,9 +251,10 @@ class ConstructionHeuristics:
 
     def __init__(self, flp: FLP):
         self.flp = flp
-        # indices of customers and facilities for shoffle operations
+        # indices of customers and facilities for shuffle operations
         self.costumers = np.arange(flp.num_customers)
         self.facilities = np.arange(flp.num_facilities)
+        # total demand
         self.total_demand = np.sum(flp.demand)
 
     def random_assignment_solution(self, sol=None, max_tries=1000):
@@ -473,7 +489,7 @@ if __name__ == '__main__':
     flp = FLP(filename='codes/instances/p1')
     print(flp)
     bf = BruteForce(flp)
-    sol = bf.solve()
+    sol = bf.solve(10)
     print(sol)
 
     # ch = ConstructionHeuristics(flp)
