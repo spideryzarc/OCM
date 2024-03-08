@@ -360,17 +360,16 @@ class LocalSearch:
         # indices of customers and facilities for shoffle operations
         self.facilities = np.arange(flp.num_facilities)
 
-    def two_opt(self, sol: FLP_Solution, shuffle=True, first_improvement=True):
+    def two_opt(self, sol: FLP_Solution, first_improvement=True):
         ''' Try to improve the solution by swapping two customers between two facilities,
         if find a better solution, then sol is updated.
         Parameters:
-            sol: FLP_Solution - the solution to be improved
-            shuffle: bool (default True) if True the customers and facilities are shuffled before the search
+            sol: FLP_Solution - the solution to be improved            
             first_improvement: bool (default True) if True the search stops at the first improvement
         Returns:
             bool - True if the solution was improved, False otherwise            
             '''
-        if shuffle and first_improvement:
+        if first_improvement:
             np.random.shuffle(self.costumers)
             np.random.shuffle(self.facilities)
 
@@ -404,7 +403,7 @@ class LocalSearch:
                         sol.assigned[i], sol.assigned[j] = sol.assigned[j], sol.assigned[i]
                         sol.objective += delta
                         assert sol.is_valid(), 'Invalid solution'  # should not happen
-                        print('2opt', sol.objective)                                                
+                        print('2opt', sol.objective)
                         return True
                     if delta < best:
                         best = delta
@@ -420,17 +419,16 @@ class LocalSearch:
             return True
         return False
 
-    def replace(self, sol: FLP_Solution, shuffle=True, first_improvement=True):
+    def replace(self, sol: FLP_Solution, first_improvement=True):
         ''' Try to improve the solution by replacing a customer from one facility to another,
         if find a better solution, then sol is updated.
         Parameters:
             sol: FLP_Solution - the solution to be improved
-            shuffle: bool (default True) if True the customers and facilities are shuffled before the search
             first_improvement: bool (default True) if True the search stops at the first improvement
         Returns:
             bool - True if the solution was improved, False otherwise            
             '''
-        if shuffle and first_improvement:
+        if first_improvement:
             np.random.shuffle(self.costumers)
             np.random.shuffle(self.facilities)
 
@@ -446,7 +444,8 @@ class LocalSearch:
                 if sol.remaining[j] < self.flp.demand[i]:
                     # capacity constraint
                     continue
-                delta = self.flp.assignment_cost[j, i] - self.flp.assignment_cost[fi, i]
+                delta = self.flp.assignment_cost[j,
+                                                 i] - self.flp.assignment_cost[fi, i]
                 if sol.facility_customers_count[fi] == 1:
                     # facility will be closed
                     delta -= self.flp.opening_cost[fi]
@@ -462,8 +461,8 @@ class LocalSearch:
                         sol.remaining[j] -= self.flp.demand[i]
                         sol.assigned[i] = j
                         sol.objective += delta
-                        assert sol.is_valid(), 'Invalid solution'  # should not happen     
-                        print('replace', sol.objective)                   
+                        assert sol.is_valid(), 'Invalid solution'  # should not happen
+                        print('replace', sol.objective)
                         return True
                     if delta < best:
                         best = delta
@@ -476,9 +475,24 @@ class LocalSearch:
             sol.remaining[arg_j] -= self.flp.demand[arg_i]
             sol.assigned[arg_i] = arg_j
             sol.objective += best
-            assert sol.is_valid(), 'Invalid solution'            
+            assert sol.is_valid(), 'Invalid solution'
             return True
         return False
+
+    def VND(self, sol: FLP_Solution):
+        '''Variable Neighborhood Descent, a metaheuristic that combines local search methods,
+        the search stops when no improvement is found in any neighborhood
+        Parameters:
+            sol: FLP_Solution - the initial solution
+        Returns:
+            bool - True if the solution was improved, False otherwise
+            '''
+        any_imp = False
+        while False\
+            or self.two_opt(sol, first_improvement=False)\
+            or self.replace(sol, first_improvement=False):
+            any_imp = True
+        return any_imp
 
 
 class MIP:
@@ -571,7 +585,7 @@ if __name__ == '__main__':
     # sol = ch.greedy()
     # print(sol)
     sol = ch.greedy(rd_opening=True)
-    # print(sol)
+    print(sol)
     ls = LocalSearch(flp)
-    while ls.two_opt(sol, first_improvement=True) or ls.replace(sol, first_improvement=True):
-        print('** ', sol)
+    ls.VND(sol)
+    print(sol)
