@@ -226,7 +226,7 @@ class BruteForce:
         Returns:
             FLP_Solution - the best solution found
         '''
-        
+
         if timeout:
             self.stop_time = time.time() + timeout
 
@@ -238,10 +238,10 @@ class BruteForce:
         # sort facilities by assignment cost to the customer 0
         facilities = sorted(
             self.facilities, key=lambda j: self.flp.assignment_cost[j, 0])
-    
+
         for j in facilities:
             self.tries(0, j, best, working)
-    
+
         return best
 
 
@@ -257,75 +257,69 @@ class ConstructionHeuristics:
         # total demand
         self.total_demand = np.sum(flp.demand)
 
-    def random_assignment_solution(self, sol=None, max_tries=1000):
+    def random_assignment_solution(self, max_tries=1000):
         '''Create a solution by randomly assigning customers to facilities, 
         the feasibility is checked before returning the solution       
         Parameters:
             max_tries: int (default 1000) maximum number of tries to create a feasible solution
-            sol: FLP_Solution or None (default None) a solution to be used, if None a new solution is created
         Returns:
             FLP_Solution or None - a feasible solution or None if it was not possible to create a feasible solution
             '''
-        if sol is None:
-            sol = FLP_Solution(self.flp)
-        else:
-            sol.assigned[:] = -1
-        sol.objective = np.inf
+
+        best = FLP_Solution(self.flp)
+        best.objective = np.inf
         working = FLP_Solution(self.flp)
         for _ in range(max_tries):
+            # reset remaining capacity
             working.remaining[:] = self.flp.supply
             for i in range(self.flp.num_customers):
                 working.assigned[i] = np.random.randint(
                     self.flp.num_facilities)
                 working.remaining[working.assigned[i]] -= self.flp.demand[i]
+                # check if the assignment violates capacity constraints
                 if working.remaining[working.assigned[i]] < 0:
                     break
             else:
+                # all customers were assigned without violating capacity constraints
                 working.facility_customers_count[:] = np.bincount(
                     working.assigned, minlength=self.flp.num_facilities)
                 working.evaluate()
                 assert working.is_valid(), 'Invalid solution'  # should not happen
-                if working.objective < sol.objective:
+                if working.objective < best.objective:
                     print('ch', working.objective)
-                    sol.objective = working.objective
-                    sol.facility_customers_count[:] = working.facility_customers_count
-                    sol.assigned[:] = working.assigned
-                    sol.remaining[:] = working.remaining
-        if sol.objective < np.inf:
-            return sol
+                    best.copy_from(working)
+        if best.objective < np.inf:
+            return best
         return None
 
-    def greedy(self, sol=None, rd_opening=False):
+    def greedy(self, rd_opening=False):
         '''Create a solution by a greedy heuristic, 
         each customer is assigned to the facility with the lowest cost, 
         considering the opening cost and the assignment cost, 
         the feasibility is guaranteed by the heuristic    
         Parameters:
-            sol: FLP_Solution or None (default None) a solution to be used, if None a new solution is created
             rd_opening: bool (default False) if True the random facilities will be opened before customers assignment
         Returns:
             FLP_Solution or None - a feasible solution or None if it was not possible to create a feasible solution
             '''
-        if sol is None:
-            sol = FLP_Solution(self.flp)
-        else:
-            sol.assigned[:] = -1
+        
+        sol = FLP_Solution(self.flp)       
 
-        objective = 0
         if rd_opening:
+            # open random facilities until the total demand is satisfied
             np.random.shuffle(self.facilities)
             supply = 0
             for j in self.facilities:
                 sol.facility_customers_count[j] = 1
-                objective += self.flp.opening_cost[j]
                 supply += self.flp.supply[j]
                 if supply >= self.total_demand:
                     break
-        sol.remaining[:] = self.flp.supply[:]
+        
         for _ in range(self.flp.num_customers):
             best = np.inf
             arg_cos = -1
             arg_fac = -1
+            # select the customer with the lowest cost to be assigned
             for i in self.costumers:
                 if sol.assigned[i] >= 0:
                     continue
@@ -338,14 +332,18 @@ class ConstructionHeuristics:
                             best = cost
                             arg_cos = i
                             arg_fac = j
+            if arg_cos < 0:
+                # no customer can be assigned
+                return None
             sol.assigned[arg_cos] = arg_fac
+            # mark the facility as opened (not counting the customers yet)
             sol.facility_customers_count[arg_fac] = 1
-            objective += best
             sol.remaining[arg_fac] -= self.flp.demand[arg_cos]
         # ajust facility_customers_count
         sol.facility_customers_count[:] = np.bincount(
             sol.assigned, minlength=self.flp.num_facilities)
-        sol.objective = objective
+        # evaluate the solution
+        sol.evaluate()
         # check if the solution is valid
         assert sol.is_valid(), 'Invalid solution'  # should not happen
         return sol
@@ -488,17 +486,17 @@ class LocalSearch:
 if __name__ == '__main__':
     flp = FLP(filename='codes/instances/p1')
     print(flp)
-    bf = BruteForce(flp)
-    sol = bf.solve(10)
-    print(sol)
+    # bf = BruteForce(flp)
+    # sol = bf.solve(10)
+    # print(sol)
 
-    # ch = ConstructionHeuristics(flp)
+    ch = ConstructionHeuristics(flp)
     # sol = ch.random_assignment_solution(max_tries=1000)
     # print(sol)
-    # # sol = ch.greedy()
-    # # print(sol)
+    sol = ch.greedy()
+    print(sol)
     # sol = ch.greedy(rd_opening=True)
     # print(sol)
-    # ls = LocalSearch(flp)
-    # while ls.two_opt(sol, first_improvement=False):
-    #     print('** ', sol)
+    ls = LocalSearch(flp)
+    while ls.two_opt(sol, first_improvement=False):
+        print('** ', sol)
