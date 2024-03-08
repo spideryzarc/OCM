@@ -103,7 +103,8 @@ class FLP_Solution:
 
     def __str__(self):
         s = 'Opened: ' + \
-            ' '.join(map(str,  np.flatnonzero(self.facility_customers_count>0) )) + '\n'
+            ' '.join(map(str,  np.flatnonzero(
+                self.facility_customers_count > 0))) + '\n'
         s += 'Assigned: ' + ' '.join(map(str, self.assigned)) + '\n'
         s += f'Objective: {self.objective}\n'
         return s
@@ -143,7 +144,7 @@ class FLP_Solution:
         '''Reset the solution to the initial state'''
         self.facility_customers_count[:] = 0
         self.assigned[:] = -1
-        self.objective = np.inf
+        self.objective = 0
         self.remaining[:] = self.flp.supply
 
     def copy_from(self, other):
@@ -153,6 +154,33 @@ class FLP_Solution:
         self.objective = other.objective
         self.remaining[:] = other.remaining
 
+    def assign(self, i, j):
+        '''Assign customer i to facility j, i must not be assigned to any facility yet'''
+        if self.assigned[i] >= 0:
+            raise ValueError('Customer already assigned')
+        if self.remaining[j] < self.flp.demand[i]:
+            raise ValueError('Facility capacity would be exceeded')
+        self.assigned[i] = j
+        self.remaining[j] -= self.flp.demand[i]
+        self.facility_customers_count[j] += 1
+        if self.facility_customers_count[j] == 1:
+            self.objective += self.flp.opening_cost[j]
+        self.objective += self.flp.assignment_cost[j, i]
+
+    def unassign(self, i):
+        '''Unassign customer i from its facility, i must be assigned to some facility
+        Returns the facility index where i was assigned'''
+        j = self.assigned[i]
+        if j < 0:
+            raise ValueError('Customer not assigned')
+        self.remaining[j] += self.flp.demand[i]
+        self.assigned[i] = -1
+        self.facility_customers_count[j] -= 1
+        if self.facility_customers_count[j] == 0:
+            self.objective -= self.flp.opening_cost[j]
+        self.objective -= self.flp.assignment_cost[j, i]
+        return j
+
 
 class BruteForce:
 
@@ -161,43 +189,43 @@ class BruteForce:
         self.costumers = np.arange(flp.num_customers)
         self.facilities = np.arange(flp.num_facilities)
 
-    def tries(self, i, j, best, working):
-        if i == self.flp.num_customers:
-            if working.objective < best.objective:
-                best.objective = working.objective
-                best.facility_customers_count[:] = working.facility_customers_count
-                best.assigned[:] = working.assigned
-                best.remaining[:] = working.remaining
-                print('bf', best.objective)
-                assert best.is_valid(), 'Invalid solution'  # should not happen
-                assert np.isclose(working.objective, best.evaluate(
-                )), 'Invalid objective'  # should not happen
-            return
+    def tries(self, i, j, best: FLP_Solution, working: FLP_Solution):
+        # if facility j has enough capacity to attend customer i
         if working.remaining[j] >= self.flp.demand[i]:
-            working.assigned[i] = j
-            working.remaining[j] -= self.flp.demand[i]
-            working.facility_customers_count[j] += 1
-            if working.facility_customers_count[j] == 1:
-                working.objective += self.flp.opening_cost[j]
-            working.objective += self.flp.assignment_cost[j, i]
-            if working.objective < best.objective:  # upper bound
-                for k in self.facilities:
-                    self.tries(i+1, k, best, working)
-            working.remaining[j] += self.flp.demand[i]
-            working.assigned[i] = -1
-            working.facility_customers_count[j] -= 1
-            if working.facility_customers_count[j] == 0:
-                working.objective -= self.flp.opening_cost[j]
-            working.objective -= self.flp.assignment_cost[j, i]
+            # assign customer i to facility j
+            working.assign(i, j)
+            # if current lower bound is better than best found so far
+            if working.objective < best.objective:
+                if i < self.flp.num_customers - 1:
+                    # sort facilities by assignment cost to the next customer
+                    facilities = sorted(
+                        self.facilities, key=lambda j: self.flp.assignment_cost[j, i+1])
+                    # try next customer
+                    for k in facilities:
+                        self.tries(i+1, k, best, working)
+                elif working.objective < best.objective:
+                    # update best solution
+                    best.objective = working.objective
+                    best.facility_customers_count[:] = working.facility_customers_count
+                    best.assigned[:] = working.assigned
+                    best.remaining[:] = working.remaining
+                    print('bf', best.objective)
+                    assert best.is_valid(), 'Invalid solution'  # should not happen
+            # undo assignment
+            working.unassign(i)
         return
 
     def solve(self):
         best = FLP_Solution(self.flp)
         best.objective = np.inf
         working = FLP_Solution(self.flp)
-        working.objective = 0
+        working.reset()
 
-        for j in self.facilities:
+
+        # sort facilities by assignment cost to the customer 0
+        facilities = sorted(
+            self.facilities, key=lambda j: self.flp.assignment_cost[j, 0])
+        for j in facilities:
             self.tries(0, j, best, working)
         return best
 
@@ -303,7 +331,7 @@ class ConstructionHeuristics:
             sol.assigned, minlength=self.flp.num_facilities)
         sol.objective = objective
         # check if the solution is valid
-        assert sol.is_valid(), 'Invalid solution'  # should not happen        
+        assert sol.is_valid(), 'Invalid solution'  # should not happen
         return sol
 
 
@@ -444,17 +472,17 @@ class LocalSearch:
 if __name__ == '__main__':
     flp = FLP(filename='codes/instances/p1')
     print(flp)
-    # bf = BruteForce(flp)
-    # sol = bf.solve()
-    # print(sol)
+    bf = BruteForce(flp)
+    sol = bf.solve()
+    print(sol)
 
-    ch = ConstructionHeuristics(flp)
-    sol = ch.random_assignment_solution(max_tries=1000)
-    print(sol)
-    # sol = ch.greedy()
+    # ch = ConstructionHeuristics(flp)
+    # sol = ch.random_assignment_solution(max_tries=1000)
     # print(sol)
-    sol = ch.greedy(rd_opening=True)
-    print(sol)
-    ls = LocalSearch(flp)
-    while ls.two_opt(sol, first_improvement=False):
-        print('** ', sol)
+    # # sol = ch.greedy()
+    # # print(sol)
+    # sol = ch.greedy(rd_opening=True)
+    # print(sol)
+    # ls = LocalSearch(flp)
+    # while ls.two_opt(sol, first_improvement=False):
+    #     print('** ', sol)
