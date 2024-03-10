@@ -1,5 +1,6 @@
 import numpy as np
 import time
+from itertools import combinations, product
 
 
 class FLP:
@@ -329,9 +330,7 @@ class ConstructionHeuristics:
                         if sol.facility_customers_count[j] == 0:
                             cost += self.flp.opening_cost[j]
                         if cost < best:
-                            best = cost
-                            arg_cos = i
-                            arg_fac = j
+                            best, arg_cos, arg_fac = cost, i, j
             if arg_cos < 0:
                 # no customer can be assigned
                 return None
@@ -376,39 +375,33 @@ class LocalSearch:
         best = 0
         arg_i = -1
         arg_j = -1
-        for i in self.costumers:
-            for j in self.costumers:
-                if i >= j:
-                    # avoid duplicate pairs
-                    continue
-                if sol.assigned[i] == sol.assigned[j]:
-                    # same facility
-                    continue
-                fi = sol.assigned[i]
-                fj = sol.assigned[j]
-                if sol.remaining[fi] + self.flp.demand[i] - self.flp.demand[j] < 0  \
-                        or sol.remaining[fj] + self.flp.demand[j] - self.flp.demand[i] < 0:
-                    # capacity constraint
-                    continue
-                delta = self.flp.assignment_cost[fj, i]\
-                    + self.flp.assignment_cost[fi, j]\
-                    - self.flp.assignment_cost[fi, i]\
-                    - self.flp.assignment_cost[fj, j]
-                if delta < 0:
-                    # improvement
-                    if first_improvement:
-                        demand_delta = self.flp.demand[i] - self.flp.demand[j]
-                        sol.remaining[fi] += demand_delta
-                        sol.remaining[fj] -= demand_delta
-                        sol.assigned[i], sol.assigned[j] = sol.assigned[j], sol.assigned[i]
-                        sol.objective += delta
-                        assert sol.is_valid(), 'Invalid solution'  # should not happen
-                        print('2opt', sol.objective)
-                        return True
-                    if delta < best:
-                        best = delta
-                        arg_i = i
-                        arg_j = j
+        # all pairs of costumers that are assigned to different facilities,
+        # and the facilities have enough capacity to swap the customers
+        pairs = ((i, j) for i, j in combinations(self.costumers, 2)
+                 if sol.assigned[i] != sol.assigned[j]
+                 and sol.remaining[sol.assigned[i]] + self.flp.demand[i] - self.flp.demand[j] >= 0
+                 and sol.remaining[sol.assigned[j]] + self.flp.demand[j] - self.flp.demand[i] >= 0)
+        for i, j in pairs:
+            fi = sol.assigned[i]
+            fj = sol.assigned[j]
+            delta = self.flp.assignment_cost[fj, i]\
+                + self.flp.assignment_cost[fi, j]\
+                - self.flp.assignment_cost[fi, i]\
+                - self.flp.assignment_cost[fj, j]
+            if delta < 0:
+                # improvement
+                if first_improvement:
+                    demand_delta = self.flp.demand[i] - self.flp.demand[j]
+                    sol.remaining[fi] += demand_delta
+                    sol.remaining[fj] -= demand_delta
+                    sol.assigned[i], sol.assigned[j] = sol.assigned[j], sol.assigned[i]
+                    sol.objective += delta
+                    assert sol.is_valid(), 'Invalid solution'  # should not happen
+                    print('2opt', sol.objective)
+                    return True
+                if delta < best:
+                    best, arg_i, arg_j = delta, i, j
+        # end_for
         if arg_i >= 0:
             demand_delta = self.flp.demand[arg_i] - self.flp.demand[arg_j]
             sol.remaining[sol.assigned[arg_i]] += demand_delta
@@ -428,55 +421,46 @@ class LocalSearch:
         Returns:
             bool - True if the solution was improved, False otherwise            
             '''
+
+        def delta(i, j):
+            '''Calculate the difference in the objective function value if customer i is assigned to facility j'''
+            fi = sol.assigned[i]
+            d = self.flp.assignment_cost[j,
+                                             i] - self.flp.assignment_cost[fi, i]
+            if sol.facility_customers_count[fi] == 1:
+                # facility will be closed
+                d -= self.flp.opening_cost[fi]
+            if sol.facility_customers_count[j] == 0:
+                # facility will be opened
+                d += self.flp.opening_cost[j]
+            return d
+        
         if first_improvement:
             np.random.shuffle(self.costumers)
             np.random.shuffle(self.facilities)
 
-        best = 0
-        arg_i = -1
-        arg_j = -1
-        for i in self.costumers:
-            fi = sol.assigned[i]
-            for j in self.facilities:
-                if j == fi:
-                    # same facility
-                    continue
-                if sol.remaining[j] < self.flp.demand[i]:
-                    # capacity constraint
-                    continue
-                delta = self.flp.assignment_cost[j,
-                                                 i] - self.flp.assignment_cost[fi, i]
-                if sol.facility_customers_count[fi] == 1:
-                    # facility will be closed
-                    delta -= self.flp.opening_cost[fi]
-                if sol.facility_customers_count[j] == 0:
-                    # facility will be opened
-                    delta += self.flp.opening_cost[j]
-                if delta < 0:
-                    # improvement
-                    if first_improvement:
-                        sol.facility_customers_count[j] += 1
-                        sol.facility_customers_count[fi] -= 1
-                        sol.remaining[fi] += self.flp.demand[i]
-                        sol.remaining[j] -= self.flp.demand[i]
-                        sol.assigned[i] = j
-                        sol.objective += delta
-                        assert sol.is_valid(), 'Invalid solution'  # should not happen
-                        print('replace', sol.objective)
-                        return True
-                    if delta < best:
-                        best = delta
-                        arg_i = i
-                        arg_j = j
-        if arg_i >= 0:
-            sol.facility_customers_count[arg_j] += 1
-            sol.facility_customers_count[sol.assigned[arg_i]] -= 1
-            sol.remaining[sol.assigned[arg_i]] += self.flp.demand[arg_i]
-            sol.remaining[arg_j] -= self.flp.demand[arg_i]
-            sol.assigned[arg_i] = arg_j
-            sol.objective += best
+        # all pairs of costumers and facilities,
+        # where the customer is not currently assigned to the facility
+        # and the facility has enough capacity to attend the customer
+        pairs = ((i, j) for i, j in product(self.costumers, self.facilities)
+                 if sol.remaining[j] >= self.flp.demand[i] and sol.assigned[i] != j)
+        if first_improvement:
+            # stop at the first improvement
+            i,j = max(pairs, key=lambda p: delta(*p) < 0)
+        else:
+            # find the best improvement
+            i,j = min(pairs, key=lambda p: delta(*p))
+        d = delta(i,j)
+        if d < 0:
+            sol.facility_customers_count[j] += 1
+            sol.facility_customers_count[sol.assigned[i]] -= 1
+            sol.remaining[sol.assigned[i]] += self.flp.demand[i]
+            sol.remaining[j] -= self.flp.demand[i]
+            sol.assigned[i] = j
+            sol.objective += d
             assert sol.is_valid(), 'Invalid solution'
-            return True
+            print('replace', sol.objective)
+            return True            
         return False
 
     def VND(self, sol: FLP_Solution):
@@ -489,8 +473,8 @@ class LocalSearch:
             '''
         any_imp = False
         while False\
-            or self.two_opt(sol, first_improvement=False)\
-            or self.replace(sol, first_improvement=False):
+                or self.two_opt(sol, first_improvement=False)\
+                or self.replace(sol, first_improvement=False):
             any_imp = True
         return any_imp
 
