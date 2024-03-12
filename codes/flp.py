@@ -287,7 +287,7 @@ class ConstructionHeuristics:
                 working.evaluate()
                 assert working.is_valid(), 'Invalid solution'  # should not happen
                 if working.objective < best.objective:
-                    print('ch', working.objective)
+                    # print('ch', working.objective)
                     best.copy_from(working)
         if best.objective < np.inf:
             return best
@@ -397,7 +397,7 @@ class LocalSearch:
                     sol.assigned[i], sol.assigned[j] = sol.assigned[j], sol.assigned[i]
                     sol.objective += delta
                     assert sol.is_valid(), 'Invalid solution'  # should not happen
-                    print('2opt', sol.objective)
+                    # print('2opt', sol.objective)
                     return True
                 if delta < best:
                     best, arg_i, arg_j = delta, i, j
@@ -459,7 +459,7 @@ class LocalSearch:
             sol.assigned[i] = j
             sol.objective += d
             assert sol.is_valid(), 'Invalid solution'
-            print('replace', sol.objective)
+            # print('replace', sol.objective)
             return True            
         return False
 
@@ -478,6 +478,88 @@ class LocalSearch:
             any_imp = True
         return any_imp
 
+
+class Metaheuristics:
+    '''Metaheuristics for Facility Location Problem
+    '''
+
+    def __init__(self, flp: FLP):
+        self.flp = flp
+
+    def RMS(self, max_tries=1000):
+        '''Randomized Multi-Start, a metaheuristic that combines construction heuristics and local search methods
+        Parameters:
+            max_tries: int (default 1000) maximum number of tries without improvement
+        Returns:
+            FLP_Solution or None - a feasible solution or None if it was not possible to create a feasible solution
+            '''
+        ch = ConstructionHeuristics(self.flp)
+        ls = LocalSearch(self.flp)
+        best = None
+        ite = 0
+        while ite < max_tries:
+            ite += 1
+            sol = ch.random_assignment_solution(10)
+            if sol:
+                while ls.two_opt(sol) or ls.replace(sol):
+                    pass
+                if not best or sol.objective < best.objective:
+                    best = sol
+                    ite = 0
+                    print ('rms', best.objective)
+        return best
+    
+    def close_facility(self, sol: FLP_Solution):
+        '''Close a facility randomly and try to assign its customers to another facility
+        Parameters:
+            sol: FLP_Solution - the initial solution           '''     
+        f = np.random.choice(np.flatnonzero(sol.facility_customers_count > 0))
+        unassigned = np.flatnonzero(sol.assigned == f)
+        for i in unassigned:
+            sol.unassign(i) 
+        #greedy assignment avoiding the closed facility
+        np.random.shuffle(unassigned)
+        for i in unassigned:
+            best = np.inf
+            arg_j = -1
+            for j in range(self.flp.num_facilities):
+                if j!=f and sol.remaining[j] >= self.flp.demand[i]:
+                    cost = self.flp.assignment_cost[j, i]
+                    if sol.facility_customers_count[j] == 0:
+                        cost += self.flp.opening_cost[j]
+                    if cost < best:
+                        best, arg_j = cost, j
+            if arg_j < 0:
+                sol.assign(i,f)
+            else:
+                sol.assign(i, arg_j)
+        assert sol.is_valid(), 'Invalid solution'
+
+    def ILS(self, max_tries=1000):
+        '''Iterated Local Search, a metaheuristic that combines construction heuristics and local search methods
+        Parameters:
+            max_tries: int (default 1000) maximum number of tries without improvement
+        Returns:
+            FLP_Solution or None - a feasible solution or None if it was not possible to create a feasible solution
+            '''
+        ch = ConstructionHeuristics(self.flp)
+        ls = LocalSearch(self.flp)
+        best = ch.random_assignment_solution(100)
+        sol = FLP_Solution(self.flp)
+        sol.copy_from(best)
+        ite = 0
+        while ite < max_tries:
+            ite += 1
+            # sol.copy_from(best)
+            self.close_facility(sol)
+            if sol:
+                while ls.two_opt(sol) or ls.replace(sol):
+                    pass
+                if not best or sol.objective < best.objective:
+                    best.copy_from(sol)
+                    ite = 0
+                    print ('ils', best.objective)
+        return best
 
 class MIP:
     ''' Mixed Integer Programming for Facility Location Problem,
@@ -563,13 +645,16 @@ if __name__ == '__main__':
     # sol = mip.solve(60)
     # print(sol)
 
-    ch = ConstructionHeuristics(flp)
+    # ch = ConstructionHeuristics(flp)
     # sol = ch.random_assignment_solution(max_tries=10)
     # print(sol)
     # sol = ch.greedy()
     # print(sol)
-    sol = ch.greedy(rd_opening=True)
-    print(sol)
-    ls = LocalSearch(flp)
-    ls.VND(sol)
-    print(sol)
+    # sol = ch.greedy(rd_opening=True)
+    # print(sol)
+    # ls = LocalSearch(flp)
+    # ls.VND(sol)
+    # print(sol)
+    meta = Metaheuristics(flp)
+    # sol = meta.RMS(1000)
+    sol = meta.ILS(1000)
