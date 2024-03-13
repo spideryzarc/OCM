@@ -423,10 +423,10 @@ class LocalSearch:
             '''
 
         def delta(i, j):
-            '''Calculate the difference in the objective function value if customer i is assigned to facility j'''
+            # Calculate the difference in the objective function value if customer i is assigned to facility j
             fi = sol.assigned[i]
-            d = self.flp.assignment_cost[j,
-                                             i] - self.flp.assignment_cost[fi, i]
+            d = self.flp.assignment_cost[j,i] \
+                - self.flp.assignment_cost[fi, i]
             if sol.facility_customers_count[fi] == 1:
                 # facility will be closed
                 d -= self.flp.opening_cost[fi]
@@ -445,8 +445,13 @@ class LocalSearch:
         pairs = ((i, j) for i, j in product(self.costumers, self.facilities)
                  if sol.remaining[j] >= self.flp.demand[i] and sol.assigned[i] != j)
         if first_improvement:
+            # generate only pairs that improve the solution
+            imp_pairs = (p for p in pairs if delta(*p) < 0)
             # stop at the first improvement
-            i,j = max(pairs, key=lambda p: delta(*p) < 0)
+            try:
+                i, j = next(imp_pairs)
+            except StopIteration:
+                return False         
         else:
             # find the best improvement
             i,j = min(pairs, key=lambda p: delta(*p))
