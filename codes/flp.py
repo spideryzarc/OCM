@@ -1,7 +1,7 @@
 import numpy as np
 import time
 from itertools import combinations, product
-
+import cProfile
 
 class FLP:
     '''Single Source Capacitated Facility Location Problem (SSCFLP)
@@ -473,8 +473,8 @@ class LocalSearch:
             '''
         any_imp = False
         while False\
-                or self.two_opt(sol, first_improvement=False)\
-                or self.replace(sol, first_improvement=False):
+                or self.replace(sol)\
+                or self.two_opt(sol):
             any_imp = True
         return any_imp
 
@@ -501,8 +501,7 @@ class Metaheuristics:
             ite += 1
             sol = ch.random_assignment_solution(10)
             if sol:
-                while ls.two_opt(sol) or ls.replace(sol):
-                    pass
+                ls.VND(sol)
                 if not best or sol.objective < best.objective:
                     best = sol
                     ite = 0
@@ -655,6 +654,9 @@ if __name__ == '__main__':
     # ls = LocalSearch(flp)
     # ls.VND(sol)
     # print(sol)
+    #fix random seed
+    np.random.seed(0)
     meta = Metaheuristics(flp)
-    # sol = meta.RMS(1000)
-    sol = meta.ILS(1000)
+    # sol = meta.RMS(100)
+    cProfile.run('sol = meta.RMS(100)', sort='tottime')
+    # sol = meta.ILS(1000)
