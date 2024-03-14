@@ -354,10 +354,19 @@ class LocalSearch:
 
     def __init__(self, flp: FLP):
         self.flp = flp
-        # indices of customers and facilities for shoffle operations
+        # indices of customers for generator operations
         self.costumers = np.arange(flp.num_customers)
-        # indices of customers and facilities for shoffle operations
-        self.facilities = np.arange(flp.num_facilities)
+        # estimation of how many customers are assigned to each open facility
+        c = np.ceil(np.mean(flp.supply) / np.mean(flp.demand))
+        print('Estimated number of costumer per facility',c)
+        # percentile of the assignment cost to be considered in the greedy score
+        q = c/flp.num_customers
+        print('Percentile of the assignment cost',q)
+        # facilities greedy scores
+        score = np.quantile(flp.assignment_cost,q=q,axis=1 ) + flp.opening_cost/ flp.supply
+        # print(score)
+        self.facilities = np.argsort(score)
+        # print(score[self.facilities])
 
     def two_opt(self, sol: FLP_Solution, first_improvement=True):
         ''' Try to improve the solution by swapping two customers between two facilities,
@@ -368,47 +377,43 @@ class LocalSearch:
         Returns:
             bool - True if the solution was improved, False otherwise            
             '''
-        if first_improvement:
-            np.random.shuffle(self.costumers)
-            np.random.shuffle(self.facilities)
+        # take flp attributes as local variables to avoid multiple lookups, improving performance
+        assignment_cost, demand = self.flp.assignment_cost, self.flp.demand
+        # take sol attributes as local variables to avoid multiple lookups, improving performance
+        remaining, assigned = sol.remaining, sol.assigned
 
-        best = 0
-        arg_i = -1
-        arg_j = -1
+        # nested function to calculate the cost variation of swapping customers i and j between facilities
+        def delta(i:int, j:int):
+            fi = assigned[i]
+            fj = assigned[j]
+            return assignment_cost[fj, i] + assignment_cost[fi, j] \
+                - assignment_cost[fi, i] - assignment_cost[fj, j]
+                    
         # all pairs of costumers that are assigned to different facilities,
         # and the facilities have enough capacity to swap the customers
         pairs = ((i, j) for i, j in combinations(self.costumers, 2)
-                 if sol.assigned[i] != sol.assigned[j]
-                 and sol.remaining[sol.assigned[i]] + self.flp.demand[i] - self.flp.demand[j] >= 0
-                 and sol.remaining[sol.assigned[j]] + self.flp.demand[j] - self.flp.demand[i] >= 0)
-        for i, j in pairs:
-            fi = sol.assigned[i]
-            fj = sol.assigned[j]
-            delta = self.flp.assignment_cost[fj, i]\
-                + self.flp.assignment_cost[fi, j]\
-                - self.flp.assignment_cost[fi, i]\
-                - self.flp.assignment_cost[fj, j]
-            if delta < 0:
-                # improvement
-                if first_improvement:
-                    demand_delta = self.flp.demand[i] - self.flp.demand[j]
-                    sol.remaining[fi] += demand_delta
-                    sol.remaining[fj] -= demand_delta
-                    sol.assigned[i], sol.assigned[j] = sol.assigned[j], sol.assigned[i]
-                    sol.objective += delta
-                    assert sol.is_valid(), 'Invalid solution'  # should not happen
-                    # print('2opt', sol.objective)
-                    return True
-                if delta < best:
-                    best, arg_i, arg_j = delta, i, j
-        # end_for
-        if arg_i >= 0:
-            demand_delta = self.flp.demand[arg_i] - self.flp.demand[arg_j]
-            sol.remaining[sol.assigned[arg_i]] += demand_delta
-            sol.remaining[sol.assigned[arg_j]] -= demand_delta
-            sol.assigned[arg_i], sol.assigned[arg_j] = sol.assigned[arg_j], sol.assigned[arg_i]
-            sol.objective += best
+                 if assigned[i] != assigned[j]
+                 and remaining[assigned[i]] + demand[i]  >= demand[j]
+                 and remaining[assigned[j]] + demand[j]  >= demand[i])
+        if first_improvement:
+            # generate only pairs that improve the solution
+            imp_pairs = (p for p in pairs if delta(*p) < -1e-6)
+            # find first improvement
+            try:
+                i, j = next(imp_pairs)
+            except StopIteration:
+                return False
+        else:
+            # find the best improvement
+            i,j = min(pairs, key=lambda p: delta(*p))
+        d = delta(i,j)
+        if d < -1e-6:
+            remaining[assigned[i]] += demand[i] - demand[j]
+            remaining[assigned[j]] += demand[j] - demand[i]
+            assigned[i], assigned[j] = assigned[j], assigned[i]
+            sol.objective += d
             assert sol.is_valid(), 'Invalid solution'
+            # print('two_opt', sol.objective)
             return True
         return False
 
@@ -421,33 +426,32 @@ class LocalSearch:
         Returns:
             bool - True if the solution was improved, False otherwise            
             '''
-
-        def delta(i, j):
-            # Calculate the difference in the objective function value if customer i is assigned to facility j
-            fi = sol.assigned[i]
-            d = self.flp.assignment_cost[j,i] \
-                - self.flp.assignment_cost[fi, i]
-            if sol.facility_customers_count[fi] == 1:
+        # take flp attributes as local variables to avoid multiple lookups, improving performance
+        assignment_cost, opening_cost, demand = self.flp.assignment_cost, self.flp.opening_cost, self.flp.demand
+        # take sol attributes as local variables to avoid multiple lookups, improving performance
+        facility_customers_count, remaining, assigned = sol.facility_customers_count, sol.remaining, sol.assigned
+        
+        # nested function to calculate the cost variation of replacing customer i from facility fi to facility j
+        def delta(i:int, j:int):
+            fi = assigned[i]
+            d = assignment_cost[j,i] - assignment_cost[fi, i]
+            if facility_customers_count[fi] == 1:
                 # facility will be closed
-                d -= self.flp.opening_cost[fi]
-            if sol.facility_customers_count[j] == 0:
+                d -= opening_cost[fi]
+            if facility_customers_count[j] == 0:
                 # facility will be opened
-                d += self.flp.opening_cost[j]
+                d += opening_cost[j]
             return d
         
-        if first_improvement:
-            np.random.shuffle(self.costumers)
-            np.random.shuffle(self.facilities)
-
         # all pairs of costumers and facilities,
         # where the customer is not currently assigned to the facility
         # and the facility has enough capacity to attend the customer
         pairs = ((i, j) for i, j in product(self.costumers, self.facilities)
-                 if sol.remaining[j] >= self.flp.demand[i] and sol.assigned[i] != j)
+                 if remaining[j] >= demand[i] and assigned[i] != j)
         if first_improvement:
             # generate only pairs that improve the solution
-            imp_pairs = (p for p in pairs if delta(*p) < 0)
-            # stop at the first improvement
+            imp_pairs = (p for p in pairs if delta(*p) < -1e-6)
+            # find the first improvement
             try:
                 i, j = next(imp_pairs)
             except StopIteration:
@@ -456,19 +460,19 @@ class LocalSearch:
             # find the best improvement
             i,j = min(pairs, key=lambda p: delta(*p))
         d = delta(i,j)
-        if d < 0:
-            sol.facility_customers_count[j] += 1
-            sol.facility_customers_count[sol.assigned[i]] -= 1
-            sol.remaining[sol.assigned[i]] += self.flp.demand[i]
-            sol.remaining[j] -= self.flp.demand[i]
-            sol.assigned[i] = j
+        if d < -1e-6:
+            facility_customers_count[j] += 1
+            facility_customers_count[assigned[i]] -= 1
+            remaining[assigned[i]] += demand[i]
+            remaining[j] -= demand[i]
+            assigned[i] = j
             sol.objective += d
             assert sol.is_valid(), 'Invalid solution'
             # print('replace', sol.objective)
             return True            
         return False
 
-    def VND(self, sol: FLP_Solution):
+    def VND(self, sol: FLP_Solution, use_first_improvement=True):
         '''Variable Neighborhood Descent, a metaheuristic that combines local search methods,
         the search stops when no improvement is found in any neighborhood
         Parameters:
@@ -476,11 +480,16 @@ class LocalSearch:
         Returns:
             bool - True if the solution was improved, False otherwise
             '''
+        # if use_first_improvement is True, costumers indices are shuffled to avoid bias
+        if use_first_improvement:                
+            np.random.shuffle(self.costumers)
+        
         any_imp = False
         while False\
-                or self.replace(sol)\
-                or self.two_opt(sol):
+                or self.replace(sol,first_improvement=use_first_improvement)\
+                or self.two_opt(sol,first_improvement=use_first_improvement):
             any_imp = True
+           
         return any_imp
 
 
@@ -507,7 +516,7 @@ class Metaheuristics:
             sol = ch.random_assignment_solution(10)
             if sol:
                 ls.VND(sol)
-                if not best or sol.objective < best.objective:
+                if not best or sol.objective  + 1e-6 < best.objective:
                     best = sol
                     ite = 0
                     print ('rms', best.objective)
@@ -557,9 +566,8 @@ class Metaheuristics:
             # sol.copy_from(best)
             self.close_facility(sol)
             if sol:
-                while ls.two_opt(sol) or ls.replace(sol):
-                    pass
-                if not best or sol.objective < best.objective:
+                ls.VND(sol)
+                if  sol.objective  + 1e-6 < best.objective:
                     best.copy_from(sol)
                     ite = 0
                     print ('ils', best.objective)
@@ -639,15 +647,15 @@ class MIP:
 
 #### main ####
 if __name__ == '__main__':
-    flp = FLP(filename='codes/instances/p1')
+    flp = FLP(filename='codes/instances/cap61')
     print(flp)
     # bf = BruteForce(flp)
     # sol = bf.solve(10)
     # print(sol)
 
-    # mip = MIP(flp)
-    # sol = mip.solve(60)
-    # print(sol)
+    mip = MIP(flp)
+    sol = mip.solve(60)
+    print(sol)
 
     # ch = ConstructionHeuristics(flp)
     # sol = ch.random_assignment_solution(max_tries=10)
@@ -662,6 +670,6 @@ if __name__ == '__main__':
     #fix random seed
     np.random.seed(0)
     meta = Metaheuristics(flp)
-    # sol = meta.RMS(100)
-    cProfile.run('sol = meta.RMS(100)', sort='tottime')
+    sol = meta.RMS(100)
+    # cProfile.run('sol = meta.RMS(500)', sort='tottime')
     # sol = meta.ILS(1000)
