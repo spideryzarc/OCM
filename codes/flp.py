@@ -471,6 +471,64 @@ class LocalSearch:
             # print('replace', sol.objective)
             return True            
         return False
+    
+    def exchange_facilities(self, sol: FLP_Solution, first_improvement=True):
+        ''' Try to improve the solution by closing a facility and assigning all its customers to a closed facility,
+        if find a better solution, then sol is updated.
+        Parameters:
+            sol: FLP_Solution - the solution to be improved
+            first_improvement: bool (default True) if True the search stops at the first improvement
+        Returns:
+            bool - True if the solution was improved, False otherwise            
+            '''
+        # take flp attributes as local variables to avoid multiple lookups, improving performance
+        assignment_cost, opening_cost, demand, supply = self.flp.assignment_cost, self.flp.opening_cost, self.flp.demand, self.flp.supply
+        # take sol attributes as local variables to avoid multiple lookups, improving performance
+        facility_customers_count, remaining, assigned = sol.facility_customers_count, sol.remaining, sol.assigned
+
+        # nested function to calculate the cost variation of closing facility a and opening facility b, moving all customers from a to b
+        def delta(a:int, b:int):
+            d = opening_cost[b] - opening_cost[a]
+            costumers = np.flatnonzero(assigned == a)
+            d -= np.sum(assignment_cost[a,costumers])
+            d += np.sum(assignment_cost[b,costumers])
+            return d
+        
+        # all pairs of facilities (a,b),
+        # where a is opened and b closed and b supports all a costumers
+        pairs = ((a,b) for a in self.facilities if facility_customers_count[a] > 0
+                for b in self.facilities if facility_customers_count[b] == 0
+                and supply[b] >= supply[a] - remaining[a])
+
+        if first_improvement:
+            # generate only pairs that improve the solution
+            imp_pairs = (p for p in pairs if delta(*p) < -1e-6)
+            # find the first improvement
+            try:
+                a, b = next(imp_pairs)
+            except StopIteration:
+                return False         
+        else:
+            # find the best improvement
+            a,b = min(pairs, key=lambda p: delta(*p))
+        d = delta(a,b)
+        if d < -1e-6:
+            facility_customers_count[b] = facility_customers_count[a]
+            facility_customers_count[a] = 0
+            remaining[b] = supply[b] - supply[a] + remaining[a] 
+            remaining[a] = supply[a]
+            for i in np.flatnonzero(assigned == a):
+                assigned[i] = b
+            sol.objective += d
+            assert sol.is_valid(), 'Invalid solution'
+            # print('exchange_facilities', sol.objective)
+            return True
+
+
+        return False
+
+
+
 
     def VND(self, sol: FLP_Solution, use_first_improvement=True):
         '''Variable Neighborhood Descent, a metaheuristic that combines local search methods,
@@ -487,7 +545,9 @@ class LocalSearch:
         any_imp = False
         while False\
                 or self.replace(sol,first_improvement=use_first_improvement)\
-                or self.two_opt(sol,first_improvement=use_first_improvement):
+                or self.two_opt(sol,first_improvement=use_first_improvement)\
+                or self.exchange_facilities(sol,first_improvement=use_first_improvement)\
+                :
             any_imp = True
            
         return any_imp
@@ -668,8 +728,8 @@ if __name__ == '__main__':
     # ls.VND(sol)
     # print(sol)
     #fix random seed
-    np.random.seed(0)
+    # np.random.seed(0)
     meta = Metaheuristics(flp)
-    sol = meta.RMS(100)
+    # sol = meta.RMS(100)
     # cProfile.run('sol = meta.RMS(500)', sort='tottime')
-    # sol = meta.ILS(1000)
+    sol = meta.ILS(100)
