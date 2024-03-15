@@ -368,12 +368,13 @@ class LocalSearch:
         self.facilities = np.argsort(score)
         # print(score[self.facilities])
 
-    def two_opt(self, sol: FLP_Solution, first_improvement=True):
-        ''' Try to improve the solution by swapping two customers between two facilities,
-        if find a better solution, then sol is updated.
+    def two_exchange(self, sol: FLP_Solution, first_improvement=True):
+        ''' Try to improve the solution by exchanging two customers between their facilities,
+        sol is updated if a better solution is found.
         Parameters:
             sol: FLP_Solution - the solution to be improved            
             first_improvement: bool (default True) if True the search stops at the first improvement
+                               if False the search returns the best improvement
         Returns:
             bool - True if the solution was improved, False otherwise            
             '''
@@ -389,7 +390,7 @@ class LocalSearch:
             return assignment_cost[fj, i] + assignment_cost[fi, j] \
                 - assignment_cost[fi, i] - assignment_cost[fj, j]
                     
-        # all pairs of costumers that are assigned to different facilities,
+        # all pairs of costumers (i,j) that are assigned to different facilities,
         # and the facilities have enough capacity to swap the customers
         pairs = ((i, j) for i, j in combinations(self.costumers, 2)
                  if assigned[i] != assigned[j]
@@ -432,7 +433,7 @@ class LocalSearch:
         facility_customers_count, remaining, assigned = sol.facility_customers_count, sol.remaining, sol.assigned
         
         # nested function to calculate the cost variation of replacing customer i from facility fi to facility j
-        def delta(i:int, j:int):
+        def delta(i:int, j:int)->float:
             fi = assigned[i]
             d = assignment_cost[j,i] - assignment_cost[fi, i]
             if facility_customers_count[fi] == 1:
@@ -443,11 +444,11 @@ class LocalSearch:
                 d += opening_cost[j]
             return d
         
-        # all pairs of costumers and facilities,
-        # where the customer is not currently assigned to the facility
-        # and the facility has enough capacity to attend the customer
-        pairs = ((i, j) for i, j in product(self.costumers, self.facilities)
-                 if remaining[j] >= demand[i] and assigned[i] != j)
+        # all pairs (i,b) of costumers x facilities,
+        # where i is not currently assigned to b
+        # and b has enough capacity to attend i demand 
+        pairs = ((i, b) for i, b in product(self.costumers, self.facilities)
+                 if remaining[b] >= demand[i] and assigned[i] != b)
         if first_improvement:
             # generate only pairs that improve the solution
             imp_pairs = (p for p in pairs if delta(*p) < -1e-6)
@@ -486,14 +487,18 @@ class LocalSearch:
         # take sol attributes as local variables to avoid multiple lookups, improving performance
         facility_customers_count, remaining, assigned = sol.facility_customers_count, sol.remaining, sol.assigned
 
+        # pre separete costumers by facility
+        facility_customers = [np.flatnonzero(assigned == i) for i in range(self.flp.num_facilities)]
+        # pre calculate the assignment cost plus opening cost of each facility
+        assignment_cost_facility = opening_cost + np.bincount(assigned, weights=assignment_cost[assigned, np.arange(self.flp.num_customers)], minlength=self.flp.num_facilities)
+
         # nested function to calculate the cost variation of closing facility a and opening facility b, moving all customers from a to b
         def delta(a:int, b:int):
-            d = opening_cost[b] - opening_cost[a]
-            costumers = np.flatnonzero(assigned == a)
-            d -= np.sum(assignment_cost[a,costumers])
-            d += np.sum(assignment_cost[b,costumers])
-            return d
-        
+            return  opening_cost[b] + np.sum(assignment_cost[b,facility_customers[a]])-assignment_cost_facility[a]
+
+        # closed_facilities = np.flatnonzero(facility_customers_count==0)
+        # opened_facilities = np.flatnonzero(facility_customers_count>0)
+
         # all pairs of facilities (a,b),
         # where a is opened and b closed and b supports all a costumers
         pairs = ((a,b) for a in self.facilities if facility_customers_count[a] > 0
@@ -545,7 +550,7 @@ class LocalSearch:
         any_imp = False
         while False\
                 or self.replace(sol,first_improvement=use_first_improvement)\
-                or self.two_opt(sol,first_improvement=use_first_improvement)\
+                or self.two_exchange(sol,first_improvement=use_first_improvement)\
                 or self.exchange_facilities(sol,first_improvement=use_first_improvement)\
                 :
             any_imp = True
@@ -728,8 +733,9 @@ if __name__ == '__main__':
     # ls.VND(sol)
     # print(sol)
     #fix random seed
-    # np.random.seed(0)
+    np.random.seed(0)
     meta = Metaheuristics(flp)
     # sol = meta.RMS(100)
     # cProfile.run('sol = meta.RMS(500)', sort='tottime')
-    sol = meta.ILS(100)
+    # sol = meta.ILS(100)
+    cProfile.run('sol = meta.ILS(500)', sort='tottime')
