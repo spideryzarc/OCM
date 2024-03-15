@@ -304,41 +304,41 @@ class ConstructionHeuristics:
         Returns:
             FLP_Solution or None - a feasible solution or None if it was not possible to create a feasible solution
             '''
-
+        # take flp attributes as local variables to avoid multiple lookups, improving performance
+        assignment_cost, opening_cost, demand, supply = self.flp.assignment_cost, self.flp.opening_cost, self.flp.demand, self.flp.supply
+        # create an empty solution
         sol = FLP_Solution(self.flp)
+        
 
         if rd_opening:
             # open random facilities until the total demand is satisfied
-            np.random.shuffle(self.facilities)
-            supply = 0
+            sup = 0
             for j in self.facilities:
                 sol.facility_customers_count[j] = 1
-                supply += self.flp.supply[j]
-                if supply >= self.total_demand:
+                sup += supply[j]
+                if sup >= self.total_demand:
                     break
 
+        #nested function to calculate the cost of assigning customer i to facility j
+        def cost(i: int, j: int) -> float:
+            c = assignment_cost[j, i]
+            if sol.facility_customers_count[j] == 0:
+                c += opening_cost[j]
+            return c
+        costumers = list(self.costumers)
         for _ in range(self.flp.num_customers):
-            best = np.inf
-            arg_cos = -1
-            arg_fac = -1
-            # select the customer with the lowest cost to be assigned
-            for i in self.costumers:
-                if sol.assigned[i] >= 0:
-                    continue
-                for j in self.facilities:
-                    if sol.remaining[j] >= self.flp.demand[i]:
-                        cost = self.flp.assignment_cost[j, i]
-                        if sol.facility_customers_count[j] == 0:
-                            cost += self.flp.opening_cost[j]
-                        if cost < best:
-                            best, arg_cos, arg_fac = cost, i, j
-            if arg_cos < 0:
-                # no customer can be assigned
+            try:
+                i,j = min(((i,j) for i in costumers 
+                            for j in self.facilities if sol.remaining[j] >= demand[i]),
+                            key=lambda p: cost(*p))
+            except ValueError:
                 return None
-            sol.assigned[arg_cos] = arg_fac
+            sol.assigned[i] = j
             # mark the facility as opened (not counting the customers yet)
-            sol.facility_customers_count[arg_fac] = 1
-            sol.remaining[arg_fac] -= self.flp.demand[arg_cos]
+            sol.facility_customers_count[j] = 1
+            sol.remaining[j] -= demand[i]
+            costumers.remove(i)
+        
         # ajust facility_customers_count
         sol.facility_customers_count[:] = np.bincount(
             sol.assigned, minlength=self.flp.num_facilities)
@@ -671,7 +671,7 @@ class Metaheuristics:
         ls = LocalSearch(self.flp)
         best = None
         while not best:
-            best = ch.random_assignment_solution()
+            best = ch.greedy(True)
         ls.VND(best)
         sol = FLP_Solution(self.flp)
         sol.copy_from(best)
@@ -771,7 +771,7 @@ class MIP:
 
 #### main ####
 if __name__ == '__main__':
-    flp = FLP(filename='codes/instances/p1')
+    flp = FLP(filename='codes/instances/cap61')
     print(flp)
     # bf = BruteForce(flp)
     # sol = bf.solve(10)
@@ -798,4 +798,4 @@ if __name__ == '__main__':
     # cProfile.run('sol = meta.RMS(500)', sort='tottime')
     # sol = meta.ILS(1000)
     # cProfile.run('sol = meta.ILS(100)', sort='tottime')
-    sol = meta.VNS(50)
+    sol = meta.VNS(100)
