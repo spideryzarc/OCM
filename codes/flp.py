@@ -357,7 +357,7 @@ class LocalSearch:
         # indices of customers for generator operations
         self.costumers = np.arange(flp.num_customers)
         # estimation of how many customers are assigned to each open facility
-        c = np.ceil(np.mean(flp.supply) / np.mean(flp.demand))
+        c = np.floor(np.mean(flp.supply) / np.mean(flp.demand))
         print('Estimated number of costumer per facility',c)
         # percentile of the assignment cost to be considered in the greedy score
         q = c/flp.num_customers
@@ -366,6 +366,7 @@ class LocalSearch:
         score = np.quantile(flp.assignment_cost,q=q,axis=1 ) + flp.opening_cost/ flp.supply
         # print(score)
         self.facilities = np.argsort(score)
+        # self.facilities = np.arange(flp.num_facilities)
         # print(score[self.facilities])
 
     def two_exchange(self, sol: FLP_Solution, first_improvement=True):
@@ -495,14 +496,11 @@ class LocalSearch:
         # nested function to calculate the cost variation of closing facility a and opening facility b, moving all customers from a to b
         def delta(a:int, b:int):
             return  opening_cost[b] + np.sum(assignment_cost[b,facility_customers[a]])-assignment_cost_facility[a]
-
-        # closed_facilities = np.flatnonzero(facility_customers_count==0)
-        # opened_facilities = np.flatnonzero(facility_customers_count>0)
-
+        
         # all pairs of facilities (a,b),
         # where a is opened and b closed and b supports all a costumers
-        pairs = ((a,b) for a in self.facilities if facility_customers_count[a] > 0
-                for b in self.facilities if facility_customers_count[b] == 0
+        pairs = ((a,b) for b in self.facilities if facility_customers_count[b] == 0
+                for a in self.facilities if facility_customers_count[a] > 0
                 and supply[b] >= supply[a] - remaining[a])
 
         if first_improvement:
@@ -535,7 +533,7 @@ class LocalSearch:
 
 
 
-    def VND(self, sol: FLP_Solution, use_first_improvement=True):
+    def VND(self, sol: FLP_Solution, first_imp=True):
         '''Variable Neighborhood Descent, a metaheuristic that combines local search methods,
         the search stops when no improvement is found in any neighborhood
         Parameters:
@@ -544,14 +542,14 @@ class LocalSearch:
             bool - True if the solution was improved, False otherwise
             '''
         # if use_first_improvement is True, costumers indices are shuffled to avoid bias
-        if use_first_improvement:                
+        if first_imp:                
             np.random.shuffle(self.costumers)
         
         any_imp = False
         while False\
-                or self.replace(sol,first_improvement=use_first_improvement)\
-                or self.two_exchange(sol,first_improvement=use_first_improvement)\
-                or self.exchange_facilities(sol,first_improvement=use_first_improvement)\
+                or self.replace(sol,first_improvement=first_imp)\
+                or self.two_exchange(sol,first_improvement=first_imp)\
+                or self.exchange_facilities(sol,first_improvement=first_imp)\
                 :
             any_imp = True
            
@@ -565,10 +563,11 @@ class Metaheuristics:
     def __init__(self, flp: FLP):
         self.flp = flp
 
-    def RMS(self, max_tries=1000):
+    def RMS(self, max_tries=1000, first_imp=True):
         '''Randomized Multi-Start, a metaheuristic that combines construction heuristics and local search methods
         Parameters:
             max_tries: int (default 1000) maximum number of tries without improvement
+            first_imp: bool (default True) if True the local search will use first improvement
         Returns:
             FLP_Solution or None - a feasible solution or None if it was not possible to create a feasible solution
             '''
@@ -580,7 +579,7 @@ class Metaheuristics:
             ite += 1
             sol = ch.random_assignment_solution(10)
             if sol:
-                ls.VND(sol)
+                ls.VND(sol,first_imp)
                 if not best or sol.objective  + 1e-6 < best.objective:
                     best = sol
                     ite = 0
@@ -588,29 +587,41 @@ class Metaheuristics:
         return best
     
     def close_facility(self, sol: FLP_Solution):
-        '''Close a facility randomly and try to assign its customers to another facility
+        '''Close a facility randomly and try to assign its customers to others ones
         Parameters:
-            sol: FLP_Solution - the initial solution           '''     
+            sol: FLP_Solution - the initial solution           
+        '''  
+        # take flp attributes as local variables to avoid multiple lookups, improving performance
+        assignment_cost, opening_cost, demand = self.flp.assignment_cost, self.flp.opening_cost, self.flp.demand
+        # take sol attributes as local variables to avoid multiple lookups, improving performance
+        facility_customers_count, remaining, assigned = sol.facility_customers_count, sol.remaining, sol.assigned
+        #close a random facility   
         f = np.random.choice(np.flatnonzero(sol.facility_customers_count > 0))
-        unassigned = np.flatnonzero(sol.assigned == f)
-        for i in unassigned:
-            sol.unassign(i) 
+        costumers = np.flatnonzero(sol.assigned == f)
+        sol.objective -= opening_cost[f] + np.sum(assignment_cost[f,costumers])
+        facility_customers_count[f] = 0
+        remaining[f] = self.flp.supply[f]
+        assigned[costumers] = -1
+        #nested function to calculate the cost of assigning customer i to facility j
+        def cost(i:int, j:int)->float:
+            c = assignment_cost[j, i]
+            if facility_customers_count[j] == 0:
+                c += opening_cost[j]
+            return c
+        
+        # shuffle costumers to avoid bias
+        np.random.shuffle(costumers)
         #greedy assignment avoiding the closed facility
-        np.random.shuffle(unassigned)
-        for i in unassigned:
-            best = np.inf
-            arg_j = -1
-            for j in range(self.flp.num_facilities):
-                if j!=f and sol.remaining[j] >= self.flp.demand[i]:
-                    cost = self.flp.assignment_cost[j, i]
-                    if sol.facility_customers_count[j] == 0:
-                        cost += self.flp.opening_cost[j]
-                    if cost < best:
-                        best, arg_j = cost, j
-            if arg_j < 0:
-                sol.assign(i,f)
-            else:
-                sol.assign(i, arg_j)
+        for i in costumers:
+            try:
+                j = min((j for j in range(self.flp.num_facilities) 
+                               if j != f and remaining[j] >= demand[i]),
+                               key=lambda j: cost(i,j))   
+            except ValueError:
+                # if is not possible to assign i to any other facility
+                # use the closed one
+                j = f
+            sol.assign(i,j)
         assert sol.is_valid(), 'Invalid solution'
 
     def ILS(self, max_tries=1000):
@@ -622,7 +633,9 @@ class Metaheuristics:
             '''
         ch = ConstructionHeuristics(self.flp)
         ls = LocalSearch(self.flp)
-        best = ch.random_assignment_solution(100)
+        best = ch.random_assignment_solution(10)
+        ls.VND(best)
+        print('ils',best.objective)
         sol = FLP_Solution(self.flp)
         sol.copy_from(best)
         ite = 0
@@ -630,12 +643,11 @@ class Metaheuristics:
             ite += 1
             # sol.copy_from(best)
             self.close_facility(sol)
-            if sol:
-                ls.VND(sol)
-                if  sol.objective  + 1e-6 < best.objective:
-                    best.copy_from(sol)
-                    ite = 0
-                    print ('ils', best.objective)
+            ls.VND(sol)
+            if  sol.objective  + 1e-6 < best.objective:
+                best.copy_from(sol)
+                ite = 0
+                print ('ils', best.objective)
         return best
 
 class MIP:
@@ -738,4 +750,4 @@ if __name__ == '__main__':
     # sol = meta.RMS(100)
     # cProfile.run('sol = meta.RMS(500)', sort='tottime')
     # sol = meta.ILS(100)
-    cProfile.run('sol = meta.ILS(500)', sort='tottime')
+    cProfile.run('sol = meta.ILS(100)', sort='tottime')
