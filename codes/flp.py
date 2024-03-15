@@ -632,9 +632,10 @@ class Metaheuristics:
         assert sol.is_valid(), 'Invalid solution'
 
     def ILS(self, max_tries=1000, first_imp=True):
-        '''Iterated Local Search, a metaheuristic that combines construction heuristics and local search methods
+        '''Iterated Local Search, a metaheuristic that perturbs the local minimum solution and then applies local search methods
         Parameters:
             max_tries: int (default 1000) maximum number of tries without improvement
+            first_imp: bool (default True) if True the local search will use first improvement
         Returns:
             FLP_Solution or None - a feasible solution or None if it was not possible to create a feasible solution
             '''
@@ -659,7 +660,8 @@ class Metaheuristics:
         return best
 
     def VNS(self, max_tries=1000):
-        '''Variable Neighborhood Search, a metaheuristic that combines construction heuristics and local search methods
+        '''Variable Neighborhood Search, similar to ILS, but the perturbation is not fixed and changes during the search
+        to explore different neighborhoods
         Parameters:
             max_tries: int (default 1000) maximum number of tries without improvement
         Returns:
@@ -683,11 +685,11 @@ class Metaheuristics:
             # perturb the local minimum solution
             self.close_facility(sol, k)
             ls.VND(sol)
+            # change the perturbation if it does not alter the current solution
             if np.isclose(sol.objective, last_objective):
                 k = k+1 if k < k_max else 1
             else:
                 k = k-1 if k > 1 else 1
-            # print('vnd', sol.objective)
             if sol.objective + 1e-6 < best.objective:
                 best.copy_from(sol)
                 ite = 0
