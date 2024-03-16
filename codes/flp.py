@@ -361,10 +361,10 @@ class LocalSearch:
         self.costumers = np.arange(flp.num_customers)
         # estimation of how many customers are assigned to each open facility
         c = np.floor(np.mean(flp.supply) / np.mean(flp.demand))
-        print('Estimated number of costumer per facility', c)
+        if __debug__: print('Estimated number of costumer per facility', c)
         # percentile of the assignment cost to be considered in the greedy score
         q = c/flp.num_customers
-        print('Percentile of the assignment cost', q)
+        if __debug__: print('Percentile of the assignment cost', q)
         # facilities greedy scores
         score = np.quantile(flp.assignment_cost, q=q, axis=1) + \
             flp.opening_cost / flp.supply
@@ -394,6 +394,17 @@ class LocalSearch:
             fj = assigned[j]
             return assignment_cost[fj, i] + assignment_cost[fi, j] \
                 - assignment_cost[fi, i] - assignment_cost[fj, j]
+        
+        # nested function to commit the swap
+        def commit(i: int, j: int, d: float):
+            fi = assigned[i]
+            fj = assigned[j]
+            remaining[fi] += demand[i] - demand[j]
+            remaining[fj] += demand[j] - demand[i]
+            assigned[i], assigned[j] = fj, fi
+            sol.objective += d
+            # print('two_exchange', sol.objective)
+            assert sol.is_valid(), 'Invalid solution'
 
         # all pairs of costumers (i,j) that are assigned to different facilities,
         # and the facilities have enough capacity to swap the customers
@@ -402,25 +413,21 @@ class LocalSearch:
                  and remaining[assigned[i]] + demand[i] >= demand[j]
                  and remaining[assigned[j]] + demand[j] >= demand[i])
         if first_improvement:
-            # generate only pairs that improve the solution
-            imp_pairs = (p for p in pairs if delta(*p) < -1e-6)
-            # find first improvement
-            try:
-                i, j = next(imp_pairs)
-            except StopIteration:
-                return False
+            # commit swap if it improves the solution while searching
+            imp = False
+            for i, j in pairs:
+                d = delta(i, j)
+                if d < -1e-6:
+                    commit(i, j, d)
+                    imp = True
+            return imp
         else:
             # find the best improvement
             i, j = min(pairs, key=lambda p: delta(*p))
-        d = delta(i, j)
-        if d < -1e-6:
-            remaining[assigned[i]] += demand[i] - demand[j]
-            remaining[assigned[j]] += demand[j] - demand[i]
-            assigned[i], assigned[j] = assigned[j], assigned[i]
-            sol.objective += d
-            assert sol.is_valid(), 'Invalid solution'
-            # print('two_opt', sol.objective)
-            return True
+            d = delta(i, j)
+            if d < -1e-6:
+                commit(i, j, d)
+                return True
         return False
 
     def replace(self, sol: FLP_Solution, first_improvement=True):
@@ -448,6 +455,17 @@ class LocalSearch:
                 # facility will be opened
                 d += opening_cost[j]
             return d
+        
+        #nested function to commit the replacement
+        def commit(i: int, j: int, delta: float):
+            fi = assigned[i]
+            facility_customers_count[fi] -= 1
+            facility_customers_count[j] += 1
+            remaining[fi] += demand[i]
+            remaining[j] -= demand[i]
+            assigned[i] = j
+            sol.objective += delta
+            assert sol.is_valid(), 'Invalid solution'
 
         # all pairs (i,b) of costumers x facilities,
         # where i is not currently assigned to b
@@ -455,27 +473,21 @@ class LocalSearch:
         pairs = ((i, b) for i, b in product(self.costumers, self.facilities)
                  if remaining[b] >= demand[i] and assigned[i] != b)
         if first_improvement:
-            # generate only pairs that improve the solution
-            imp_pairs = (p for p in pairs if delta(*p) < -1e-6)
-            # find the first improvement
-            try:
-                i, j = next(imp_pairs)
-            except StopIteration:
-                return False
+            imp = False
+            # commit replacement if it improves the solution while searching
+            for i, j in pairs:
+                d = delta(i, j)
+                if d < -1e-6:
+                    commit(i, j, d)
+                    imp = True
+            return imp
         else:
             # find the best improvement
             i, j = min(pairs, key=lambda p: delta(*p))
-        d = delta(i, j)
-        if d < -1e-6:
-            facility_customers_count[j] += 1
-            facility_customers_count[assigned[i]] -= 1
-            remaining[assigned[i]] += demand[i]
-            remaining[j] -= demand[i]
-            assigned[i] = j
-            sol.objective += d
-            assert sol.is_valid(), 'Invalid solution'
-            # print('replace', sol.objective)
-            return True
+            d = delta(i, j)
+            if d < -1e-6:
+                commit(i, j, d)
+                return True
         return False
 
     def exchange_facilities(self, sol: FLP_Solution, first_improvement=True):
@@ -554,8 +566,8 @@ class LocalSearch:
         any_imp = False
         while False\
                 or self.replace(sol, first_imp)\
-                or self.two_exchange(sol, first_imp)\
-                or self.exchange_facilities(sol, first_imp):
+                or self.exchange_facilities(sol, first_imp)\
+                or self.two_exchange(sol, first_imp):
             any_imp = True
 
         return any_imp
@@ -589,7 +601,7 @@ class Metaheuristics:
                 if not best or sol.objective + 1e-6 < best.objective:
                     best = sol
                     ite = 0
-                    print('rms', best.objective)
+                    if __debug__: print('rms', best.objective)
         return best
 
     @staticmethod
@@ -650,9 +662,9 @@ class Metaheuristics:
             '''
         ch = ConstructionHeuristics(flp)
         ls = LocalSearch(flp)
-        best = ch.random_assignment_solution(10)
+        best = ch.greedy(True)
         ls.VND(best, first_imp)
-        print('ils', best.objective)
+        if __debug__: print('ils', best.objective)
         sol = FLP_Solution(flp)
         sol.copy_from(best)
         ite = 0
@@ -665,7 +677,7 @@ class Metaheuristics:
             if sol.objective + 1e-6 < best.objective:
                 best.copy_from(sol)
                 ite = 0
-                print('ils', best.objective)
+                if __debug__: print('ils', best.objective)
         return best
 
     @staticmethod
@@ -687,7 +699,7 @@ class Metaheuristics:
         ls.VND(best)
         sol = FLP_Solution(flp)
         sol.copy_from(best)
-        print('vns', best.objective)
+        if __debug__: print('vns', best.objective)
         ite = 0
         k = 1
         k_max = np.count_nonzero(best.facility_customers_count)//2
@@ -700,12 +712,13 @@ class Metaheuristics:
             # change the perturbation if it does not alter the current solution
             if np.isclose(sol.objective, last_objective):
                 k = k+1 if k < k_max else 1
+                # print('change k', k)
             else:
                 k = k-1 if k > 1 else 1
             if sol.objective + 1e-6 < best.objective:
                 best.copy_from(sol)
                 ite = 0
-                print('vns', best.objective)
+                if __debug__: print('vns', best.objective)
         return best
 
 
@@ -792,10 +805,11 @@ class Benchmark:
         self.timeout = 60
         # output file
         self.output = 'benchmark.csv'
-        #pair of algorithm and its parameter iterator
+        #pair of algorithm and list of parameters 
+        #ex.: [(meta.RMS, [{'max_tries':10, 'first_imp':True}, {'max_tries':100, 'first_imp':False}])]
         self.methods = []
         #iterator of random seeds
-        self.seeds = [7]
+        self.seeds = [7,13,17,19,23,29,31,37,41,43,47,53,59,61,67,71,73,79,83,89,97][:10]
         pass
 
     def add_method(self, method, param_generator):
@@ -857,8 +871,8 @@ class Benchmark:
 
 #### main ####
 if __name__ == '__main__':
-    flp = FLP(filename='codes/instances/cap61')
-    print(flp)
+    # flp = FLP(filename='codes/instances/cap61')
+    # print(flp)
     # bf = BruteForce(flp)
     # sol = bf.solve(10)
     # print(sol)
@@ -878,13 +892,16 @@ if __name__ == '__main__':
     # ls.VND(sol)
     # print(sol)
     # fix random seed
-    # np.random.seed(0)
+    np.random.seed(0)
     meta = Metaheuristics()
     # sol = meta.RMS(100)
     # cProfile.run('sol = meta.RMS(500)', sort='tottime')
     # sol = meta.ILS(1000)
-    # cProfile.run('sol = meta.ILS(100)', sort='tottime')
-    # sol = meta.VNS(flp,100)
+    # cProfile.run('sol = meta.ILS(flp,500)', sort='tottime')
+    # sol = meta.VNS(flp,1000)
     bm= Benchmark()
-    bm.add_method(meta.RMS, [{'max_tries':mt, 'first_imp':fi}  for fi in [True, False] for mt in [10, 100]])
+    param = [{'max_tries':100, 'first_imp':True}, {'max_tries':100, 'first_imp':False}]
+    bm.add_method(meta.RMS, param)
+    bm.add_method(meta.ILS, param)
+    bm.add_method(meta.VNS, param)
     bm.run()
