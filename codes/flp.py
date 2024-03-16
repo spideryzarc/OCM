@@ -2,6 +2,7 @@ import numpy as np
 import time
 from itertools import combinations, product
 import cProfile
+import os
 
 
 class FLP:
@@ -11,6 +12,7 @@ class FLP:
 
     def __init__(self, **args):
         if 'filename' in args:
+            self.filename = args['filename']
             self.read_file(args['filename'])
         elif 'n' in args:
             # n: number of customers
@@ -518,7 +520,10 @@ class LocalSearch:
                 return False
         else:
             # find the best improvement
-            a, b = min(pairs, key=lambda p: delta(*p))
+            try:
+                a, b = min(pairs, key=lambda p: delta(*p))
+            except ValueError:
+                return False
         d = delta(a, b)
         if d < -1e-6:
             facility_customers_count[b] = facility_customers_count[a]
@@ -560,19 +565,20 @@ class Metaheuristics:
     '''Metaheuristics for Facility Location Problem
     '''
 
-    def __init__(self, flp: FLP):
-        self.flp = flp
-
-    def RMS(self, max_tries=1000, first_imp=True):
+    def __init__(self):
+        pass
+    @staticmethod
+    def RMS(flp, max_tries=1000, first_imp=True):
         '''Randomized Multi-Start, a metaheuristic that combines construction heuristics and local search methods
         Parameters:
+            flp: FLP - the problem to be solved
             max_tries: int (default 1000) maximum number of tries without improvement
             first_imp: bool (default True) if True the local search will use first improvement
         Returns:
             FLP_Solution or None - a feasible solution or None if it was not possible to create a feasible solution
             '''
-        ch = ConstructionHeuristics(self.flp)
-        ls = LocalSearch(self.flp)
+        ch = ConstructionHeuristics(flp)
+        ls = LocalSearch(flp)
         best = None
         ite = 0
         while ite < max_tries:
@@ -586,14 +592,15 @@ class Metaheuristics:
                     print('rms', best.objective)
         return best
 
-    def close_facility(self, sol: FLP_Solution, k: int = 1):
+    @staticmethod
+    def close_facility(sol: FLP_Solution, k: int = 1):
         '''Close a facility randomly and try to assign its customers to others ones
         Parameters:
             sol: FLP_Solution - the initial solution   
             k: int (default 1) number of facilities to be closed        
         '''
         # take flp attributes as local variables to avoid multiple lookups, improving performance
-        assignment_cost, opening_cost, demand = self.flp.assignment_cost, self.flp.opening_cost, self.flp.demand
+        assignment_cost, opening_cost, demand = sol.flp.assignment_cost, sol.flp.opening_cost, sol.flp.demand
         # take sol attributes as local variables to avoid multiple lookups, improving performance
         facility_customers_count, remaining, assigned = sol.facility_customers_count, sol.remaining, sol.assigned
         # choose k facilities to be closed
@@ -603,7 +610,7 @@ class Metaheuristics:
         costumers = np.flatnonzero(np.isin(assigned, facilities))
         # unassign all costumers from the closed facilities
         facility_customers_count[facilities] = 0
-        remaining[facilities] = self.flp.supply[facilities]
+        remaining[facilities] = sol.flp.supply[facilities]
         sol.objective -= np.sum(opening_cost[facilities])\
                         + np.sum(assignment_cost[assigned[costumers], costumers])
         assigned[costumers] = -1
@@ -620,7 +627,7 @@ class Metaheuristics:
         # greedy assignment avoiding the closed facility
         for i in costumers:
             try:
-                j = min((j for j in range(self.flp.num_facilities)
+                j = min((j for j in range(sol.flp.num_facilities)
                          if j not in facilities and remaining[j] >= demand[i]),
                         key=lambda j: cost(i, j))
             except ValueError:
@@ -631,26 +638,28 @@ class Metaheuristics:
             sol.assign(i, j)
         assert sol.is_valid(), 'Invalid solution'
 
-    def ILS(self, max_tries=1000, first_imp=True):
+    @staticmethod
+    def ILS(flp, max_tries=1000, first_imp=True):
         '''Iterated Local Search, a metaheuristic that perturbs the local minimum solution and then applies local search methods
         Parameters:
+            flp: FLP - the problem to be solved
             max_tries: int (default 1000) maximum number of tries without improvement
             first_imp: bool (default True) if True the local search will use first improvement
         Returns:
             FLP_Solution or None - a feasible solution or None if it was not possible to create a feasible solution
             '''
-        ch = ConstructionHeuristics(self.flp)
-        ls = LocalSearch(self.flp)
+        ch = ConstructionHeuristics(flp)
+        ls = LocalSearch(flp)
         best = ch.random_assignment_solution(10)
-        ls.VND(best)
+        ls.VND(best, first_imp)
         print('ils', best.objective)
-        sol = FLP_Solution(self.flp)
+        sol = FLP_Solution(flp)
         sol.copy_from(best)
         ite = 0
         while ite < max_tries:
             ite += 1
             # perturb the local minimum solution
-            self.close_facility(sol)
+            Metaheuristics.close_facility(sol)
             ls.VND(sol, first_imp)
             # print('vnd', sol.objective)
             if sol.objective + 1e-6 < best.objective:
@@ -659,21 +668,24 @@ class Metaheuristics:
                 print('ils', best.objective)
         return best
 
-    def VNS(self, max_tries=1000):
+    @staticmethod
+    def VNS(flp, max_tries=1000, first_imp=True):
         '''Variable Neighborhood Search, similar to ILS, but the perturbation is not fixed and changes during the search
         to explore different neighborhoods
         Parameters:
+            flp: FLP - the problem to be solved
             max_tries: int (default 1000) maximum number of tries without improvement
+            first_imp: bool (default True) if True the local search will use first improvement
         Returns:
             FLP_Solution or None - a feasible solution or None if it was not possible to create a feasible solution
             '''
-        ch = ConstructionHeuristics(self.flp)
-        ls = LocalSearch(self.flp)
+        ch = ConstructionHeuristics(flp)
+        ls = LocalSearch(flp)
         best = None
         while not best:
             best = ch.greedy(True)
         ls.VND(best)
-        sol = FLP_Solution(self.flp)
+        sol = FLP_Solution(flp)
         sol.copy_from(best)
         print('vns', best.objective)
         ite = 0
@@ -683,8 +695,8 @@ class Metaheuristics:
             ite += 1
             last_objective = sol.objective
             # perturb the local minimum solution
-            self.close_facility(sol, k)
-            ls.VND(sol)
+            Metaheuristics.close_facility(sol, k)
+            ls.VND(sol, first_imp)
             # change the perturbation if it does not alter the current solution
             if np.isclose(sol.objective, last_objective):
                 k = k+1 if k < k_max else 1
@@ -769,6 +781,80 @@ class MIP:
         return None
 
 
+class Benchmark:
+    """Benchmark for Single Source Capacitated Facility Location Problem
+    """
+
+    def __init__(self):
+        # directory with the instances
+        self.dir = 'codes/instances'
+        # time limit in seconds for each algorithm
+        self.timeout = 60
+        # output file
+        self.output = 'benchmark.csv'
+        #pair of algorithm and its parameter iterator
+        self.methods = []
+        #iterator of random seeds
+        self.seeds = [7]
+        pass
+
+    def add_method(self, method, param_generator):
+        self.methods.append((method, param_generator))
+
+    def run(self, run_by='method'):
+        '''Run the benchmark
+        '''
+
+        #alert if asserts are enabled
+        if __debug__: print('\n\n############# Assertions are enabled #########\n\n') 
+
+        #generate FLP instances from directory
+        def instances(dir:str):
+            for filename in os.listdir(dir):
+                try:
+                    yield FLP(filename=f'{dir}/{filename}')
+                except:
+                    pass
+
+        if run_by == 'method':
+            runs= ((m, p, f) for m, p in self.methods for f in instances(self.dir))
+        else:
+            runs= ((m, p, f) for f in instances(self.dir) for m, p in self.methods)
+
+        param_names = set()
+        for m,p in self.methods:
+            for args in p:
+                param_names.update(args.keys())
+
+        param_names = list(param_names)
+
+
+        with open(self.output, 'w') as f:
+            f.write('method,instance,seed,objective,time,')
+            f.write(','.join(param_names))
+            f.write('\n')
+            for method, param_generator, flp in runs:
+                for args in param_generator:
+                    for s in self.seeds:
+                        np.random.seed(s)
+                        start = time.time()
+                        sol = method(flp, **args)
+                        elapsed = time.time() - start
+                        instance_name = os.path.basename(flp.filename)
+                        obj = format(sol.objective, '.2f') if sol else ''
+                        line = f'{method.__name__},{instance_name},{s},{obj},{elapsed:.2f},'
+                        f.write(line)
+                        params = ','.join([str(args.get(p, '')) for p in param_names])
+                        f.write(params)
+                        f.write('\n')
+                        print(line,params, sep='')
+                    f.flush()
+        print('Benchmark finished')
+        
+
+        
+    
+
 #### main ####
 if __name__ == '__main__':
     flp = FLP(filename='codes/instances/cap61')
@@ -793,9 +879,12 @@ if __name__ == '__main__':
     # print(sol)
     # fix random seed
     # np.random.seed(0)
-    meta = Metaheuristics(flp)
+    meta = Metaheuristics()
     # sol = meta.RMS(100)
     # cProfile.run('sol = meta.RMS(500)', sort='tottime')
     # sol = meta.ILS(1000)
     # cProfile.run('sol = meta.ILS(100)', sort='tottime')
-    sol = meta.VNS(100)
+    # sol = meta.VNS(flp,100)
+    bm= Benchmark()
+    bm.add_method(meta.RMS, [{'max_tries':mt, 'first_imp':fi}  for fi in [True, False] for mt in [10, 100]])
+    bm.run()

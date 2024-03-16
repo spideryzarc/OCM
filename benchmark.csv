@@ -1,0 +1,9 @@
+method,instance,seed,objective,time,max_tries,first_imp
+RMS,cap61,7,939111.26,0.52,10,True
+RMS,cap61,7,932615.75,6.48,100,True
+RMS,cap61,7,939111.26,0.33,10,False
+RMS,cap61,7,933568.90,7.88,100,False
+RMS,p1,7,,0.00,10,True
+RMS,p1,7,9011.00,0.28,100,True
+RMS,p1,7,,0.00,10,False
+RMS,p1,7,9038.00,0.38,100,False
