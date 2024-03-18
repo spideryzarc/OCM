@@ -53,6 +53,8 @@ class FLP:
                     v.extend(map(float, f.readline().split()))
                 self.assignment_cost[i, :] = v[:self.num_customers]
 
+            self.total_demand = np.sum(self.demand)
+
     def write_file(self, filename):
         with open(filename, 'w') as f:
             f.write(f'{self.num_facilities} {self.num_customers}\n')
@@ -720,6 +722,66 @@ class Metaheuristics:
                 ite = 0
                 if __debug__: print('vns', best.objective)
         return best
+    
+    @staticmethod
+    def GRASP(flp, max_tries=1000, first_imp=True):
+        '''Greedy Randomized Adaptive Search Procedure, a metaheuristic that combines construction heuristics and local search methods
+        Parameters:
+            flp: FLP - the problem to be solved
+            max_tries: int (default 1000) maximum number of tries without improvement
+            first_imp: bool (default True) if True the local search will use first improvement
+        Returns:
+            FLP_Solution or None - a feasible solution or None if it was not possible to create a feasible solution
+            '''
+        
+        def greedy_rd():
+        #generate a greedy solution with randomized decisions
+            sol.reset()
+            import heapq
+            costumers = list(range(flp.num_customers))
+            suply = 0
+            while suply < flp.total_demand:
+                i = costumers[np.random.randint(len(costumers))]
+                j = np.argmin(flp.assignment_cost[:,i])
+                sol.assign(i, j)
+                costumers.remove(i)
+                if sol.facility_customers_count[j] == 1:
+                    suply += flp.supply[j]
+
+            def delta(i: int, j: int) -> float:
+                c = flp.assignment_cost[j, i]
+                if sol.facility_customers_count[j] == 0:
+                    c += flp.opening_cost[j]
+                return c
+            while len(costumers) > 0:
+                pairs = ((i, j) for i in costumers for j in range(flp.num_facilities)
+                        if sol.remaining[j] >= flp.demand[i])
+                candidates = []
+                for i,j in pairs:
+                    heapq.heappush(candidates, (delta(i,j), i, j))
+                    if len(candidates) > 10:
+                        heapq.heappop(candidates)
+                d, i, j = candidates[np.random.randint(len(candidates))]
+                sol.assign(i, j)
+                costumers.remove(i)
+            return
+            
+        
+        
+        sol = FLP_Solution(flp)
+        ch = ConstructionHeuristics(flp)
+        ls = LocalSearch(flp)
+        best = None
+        ite = 0
+        while ite < max_tries:
+            ite += 1
+            greedy_rd()
+            ls.VND(sol, first_imp)
+            if not best or sol.objective + 1e-6 < best.objective:
+                best = sol
+                ite = 0
+                if __debug__: print('grasp', best.objective)
+        return best
 
 
 class MIP:
@@ -901,7 +963,8 @@ if __name__ == '__main__':
     # sol = meta.VNS(flp,1000)
     bm= Benchmark()
     param = [{'max_tries':100, 'first_imp':True}, {'max_tries':100, 'first_imp':False}]
-    bm.add_method(meta.RMS, param)
-    bm.add_method(meta.ILS, param)
-    bm.add_method(meta.VNS, param)
+    # bm.add_method(meta.RMS, param)
+    # bm.add_method(meta.ILS, param)
+    # bm.add_method(meta.VNS, param)
+    bm.add_method(meta.GRASP, param)
     bm.run()
