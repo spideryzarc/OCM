@@ -724,61 +724,72 @@ class Metaheuristics:
         return best
     
     @staticmethod
-    def GRASP(flp, max_tries=1000, first_imp=True):
+    def GRASP(flp, max_tries=1000, first_imp=True, K=10):
         '''Greedy Randomized Adaptive Search Procedure, a metaheuristic that combines construction heuristics and local search methods
         Parameters:
             flp: FLP - the problem to be solved
             max_tries: int (default 1000) maximum number of tries without improvement
             first_imp: bool (default True) if True the local search will use first improvement
+            K: int (default 10) number of candidates to be considered in the greedy construction
         Returns:
             FLP_Solution or None - a feasible solution or None if it was not possible to create a feasible solution
             '''
-        
+        costumers = np.arange(flp.num_customers)
+        facilities = np.arange(flp.num_facilities)
         def greedy_rd():
         #generate a greedy solution with randomized decisions
             sol.reset()
             import heapq
-            costumers = list(range(flp.num_customers))
+            #shuffle costumers to avoid bias
+            np.random.shuffle(facilities)
+            # open enough facilities to satisfy the total demand
             suply = 0
-            while suply < flp.total_demand:
-                i = costumers[np.random.randint(len(costumers))]
-                j = np.argmin(flp.assignment_cost[:,i])
-                sol.assign(i, j)
-                costumers.remove(i)
-                if sol.facility_customers_count[j] == 1:
-                    suply += flp.supply[j]
-
+            for f in facilities:
+                sol.facility_customers_count[f] = 1
+                suply += flp.supply[f]
+                if suply >= flp.total_demand*1:
+                    break
+            #nested function to calculate the cost of assigning customer i to facility j
             def delta(i: int, j: int) -> float:
                 c = flp.assignment_cost[j, i]
                 if sol.facility_customers_count[j] == 0:
                     c += flp.opening_cost[j]
                 return c
-            while len(costumers) > 0:
-                pairs = ((i, j) for i in costumers for j in range(flp.num_facilities)
-                        if sol.remaining[j] >= flp.demand[i])
+            for _ in range(flp.num_customers):
+                pairs = ((i, j) for i in costumers if sol.assigned[i]==-1 
+                            for j in facilities
+                            if sol.remaining[j] >= flp.demand[i])
                 candidates = []
                 for i,j in pairs:
-                    heapq.heappush(candidates, (delta(i,j), i, j))
-                    if len(candidates) > 10:
+                    heapq.heappush(candidates, (-delta(i,j), i, j))
+                    if len(candidates) > K:
                         heapq.heappop(candidates)
+                        #print(candidates)
                 d, i, j = candidates[np.random.randint(len(candidates))]
-                sol.assign(i, j)
-                costumers.remove(i)
-            return
+                sol.assigned[i] = j
+                sol.facility_customers_count[j] = 1
+                sol.remaining[j] -= flp.demand[i]
+            # ajust sol attributes
+            sol.facility_customers_count[:] = np.bincount(
+                sol.assigned, minlength=flp.num_facilities)
+            sol.evaluate()
+            assert sol.is_valid(), 'Invalid solution'
             
+            return
         
         
         sol = FLP_Solution(flp)
+        best = FLP_Solution(flp)
         ch = ConstructionHeuristics(flp)
         ls = LocalSearch(flp)
-        best = None
         ite = 0
         while ite < max_tries:
             ite += 1
             greedy_rd()
             ls.VND(sol, first_imp)
-            if not best or sol.objective + 1e-6 < best.objective:
-                best = sol
+            #print(sol.objective)
+            if sol.objective + 1e-6 < best.objective:
+                best.copy_from(sol)
                 ite = 0
                 if __debug__: print('grasp', best.objective)
         return best
@@ -933,7 +944,7 @@ class Benchmark:
 
 #### main ####
 if __name__ == '__main__':
-    # flp = FLP(filename='codes/instances/cap61')
+    flp = FLP(filename='codes/instances/cap61')
     # print(flp)
     # bf = BruteForce(flp)
     # sol = bf.solve(10)
@@ -961,10 +972,14 @@ if __name__ == '__main__':
     # sol = meta.ILS(1000)
     # cProfile.run('sol = meta.ILS(flp,500)', sort='tottime')
     # sol = meta.VNS(flp,1000)
+    # meta.GRASP(flp,100, False, 5)
     bm= Benchmark()
-    param = [{'max_tries':100, 'first_imp':True}, {'max_tries':100, 'first_imp':False}]
+    # param = [{'max_tries':100, 'first_imp':True}, {'max_tries':100, 'first_imp':False}]
     # bm.add_method(meta.RMS, param)
     # bm.add_method(meta.ILS, param)
     # bm.add_method(meta.VNS, param)
-    bm.add_method(meta.GRASP, param)
+    # bm.add_method(meta.GRASP, param)
+    bm.seeds = [7,13,17]
+    bm.add_method(meta.GRASP, [{'max_tries':t, 'first_imp':True, 'K':k} 
+                               for t in [10, 50, 100] for k in [5, 10, 20]])
     bm.run()
