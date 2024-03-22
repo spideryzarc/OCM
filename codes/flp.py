@@ -741,14 +741,24 @@ class Metaheuristics:
             sol.reset()
             import heapq
             #shuffle costumers to avoid bias
-            np.random.shuffle(facilities)
+            np.random.shuffle(costumers)
             # open enough facilities to satisfy the total demand
             suply = 0
-            for f in facilities:
-                sol.facility_customers_count[f] = 1
-                suply += flp.supply[f]
-                if suply >= flp.total_demand*1:
-                    break
+            for c in costumers:
+                #closest facility to customer c
+                f = np.argmin(flp.assignment_cost[:,c])
+                if sol.facility_customers_count:
+                    # if the facility is already opened, assign the customer
+                    if sol.remaining[f] >= flp.demand[c]:
+                        sol.assigned[c] = f
+                        sol.remaining[f] -= flp.demand[c]
+                elif suply < flp.demand[c]:
+                    # if the facility is closed and the demand is not satisfied, open the facility
+                    sol.facility_customers_count[f] = 1
+                    sol.remaining[f] = flp.supply[f] - flp.demand[c]
+                    suply += flp.supply[f]
+
+                    
             #nested function to calculate the cost of assigning customer i to facility j
             def delta(i: int, j: int) -> float:
                 c = flp.assignment_cost[j, i]
@@ -972,14 +982,14 @@ if __name__ == '__main__':
     # sol = meta.ILS(1000)
     # cProfile.run('sol = meta.ILS(flp,500)', sort='tottime')
     # sol = meta.VNS(flp,1000)
-    # meta.GRASP(flp,100, False, 5)
-    bm= Benchmark()
-    # param = [{'max_tries':100, 'first_imp':True}, {'max_tries':100, 'first_imp':False}]
-    # bm.add_method(meta.RMS, param)
-    # bm.add_method(meta.ILS, param)
-    # bm.add_method(meta.VNS, param)
-    # bm.add_method(meta.GRASP, param)
-    bm.seeds = [7,13,17]
-    bm.add_method(meta.GRASP, [{'max_tries':t, 'first_imp':True, 'K':k} 
-                               for t in [10, 50, 100] for k in [5, 10, 20]])
-    bm.run()
+    meta.GRASP(flp,100, False, 10)
+    # bm= Benchmark()
+    # # param = [{'max_tries':100, 'first_imp':True}, {'max_tries':100, 'first_imp':False}]
+    # # bm.add_method(meta.RMS, param)
+    # # bm.add_method(meta.ILS, param)
+    # # bm.add_method(meta.VNS, param)
+    # # bm.add_method(meta.GRASP, param)
+    # bm.seeds = [7,13,17]
+    # bm.add_method(meta.GRASP, [{'max_tries':t, 'first_imp':True, 'K':k} 
+    #                            for t in [10, 50, 100] for k in [5, 10, 20]])
+    # bm.run()
