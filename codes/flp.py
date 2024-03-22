@@ -3,6 +3,7 @@ import time
 from itertools import combinations, product
 import cProfile
 import os
+import heapq
 
 
 class FLP:
@@ -724,7 +725,7 @@ class Metaheuristics:
         return best
     
     @staticmethod
-    def GRASP(flp, max_tries=1000, first_imp=True, K=10):
+    def GRASP(flp: FLP, max_tries=1000, first_imp=True, K=10):
         '''Greedy Randomized Adaptive Search Procedure, a metaheuristic that combines construction heuristics and local search methods
         Parameters:
             flp: FLP - the problem to be solved
@@ -734,30 +735,35 @@ class Metaheuristics:
         Returns:
             FLP_Solution or None - a feasible solution or None if it was not possible to create a feasible solution
             '''
+        sol = FLP_Solution(flp)
+        best = FLP_Solution(flp)
         costumers = np.arange(flp.num_customers)
-        facilities = np.arange(flp.num_facilities)
         def greedy_rd():
         #generate a greedy solution with randomized decisions
+            # amount of supply that should be opened, use last best supply if available
+            pre_supply = max(flp.total_demand, np.sum(flp.supply[best.facility_customers_count > 0]))
             sol.reset()
-            import heapq
             #shuffle costumers to avoid bias
             np.random.shuffle(costumers)
-            # open enough facilities to satisfy the total demand
+            # current supply opened
             suply = 0
+            # Open facilities and assign customers to its closest facility when facility is already opened
             for c in costumers:
                 #closest facility to customer c
                 f = np.argmin(flp.assignment_cost[:,c])
-                if sol.facility_customers_count:
+                if sol.remaining[f] < flp.demand[c]:
+                    continue
+                if sol.facility_customers_count[f]:
                     # if the facility is already opened, assign the customer
-                    if sol.remaining[f] >= flp.demand[c]:
                         sol.assigned[c] = f
                         sol.remaining[f] -= flp.demand[c]
-                elif suply < flp.demand[c]:
-                    # if the facility is closed and the demand is not satisfied, open the facility
+                elif suply < pre_supply:
+                    # if the facility is closed and the pre_supply is not satisfied, open the facility and assign the customer
+                    sol.assigned[c] = f
                     sol.facility_customers_count[f] = 1
-                    sol.remaining[f] = flp.supply[f] - flp.demand[c]
+                    sol.remaining[f] -= flp.demand[c]
                     suply += flp.supply[f]
-
+            #end_for
                     
             #nested function to calculate the cost of assigning customer i to facility j
             def delta(i: int, j: int) -> float:
@@ -765,17 +771,24 @@ class Metaheuristics:
                 if sol.facility_customers_count[j] == 0:
                     c += flp.opening_cost[j]
                 return c
-            for _ in range(flp.num_customers):
-                pairs = ((i, j) for i in costumers if sol.assigned[i]==-1 
-                            for j in facilities
+            #end_delta
+            #costumers to be assigned
+            costumers_to_assign = np.flatnonzero(sol.assigned == -1)
+            #assign the remaining costumers using a greedy randomized construction
+            for _ in range(len(costumers_to_assign)):
+                pairs = ((i, j) for i in costumers_to_assign if sol.assigned[i]==-1 
+                            for j in range(flp.num_facilities)
                             if sol.remaining[j] >= flp.demand[i])
                 candidates = []
                 for i,j in pairs:
+                    #retain the K best candidates
                     heapq.heappush(candidates, (-delta(i,j), i, j))
                     if len(candidates) > K:
                         heapq.heappop(candidates)
                         #print(candidates)
-                d, i, j = candidates[np.random.randint(len(candidates))]
+                #pick a random candidate
+                _ , i, j = candidates[np.random.randint(len(candidates))]
+                #assign the customer
                 sol.assigned[i] = j
                 sol.facility_customers_count[j] = 1
                 sol.remaining[j] -= flp.demand[i]
@@ -788,8 +801,6 @@ class Metaheuristics:
             return
         
         
-        sol = FLP_Solution(flp)
-        best = FLP_Solution(flp)
         ch = ConstructionHeuristics(flp)
         ls = LocalSearch(flp)
         ite = 0
@@ -981,15 +992,16 @@ if __name__ == '__main__':
     # cProfile.run('sol = meta.RMS(500)', sort='tottime')
     # sol = meta.ILS(1000)
     # cProfile.run('sol = meta.ILS(flp,500)', sort='tottime')
+    # cProfile.run('sol = meta.GRASP(flp,100, False, 5)', sort='tottime')
     # sol = meta.VNS(flp,1000)
-    meta.GRASP(flp,100, False, 10)
-    # bm= Benchmark()
-    # # param = [{'max_tries':100, 'first_imp':True}, {'max_tries':100, 'first_imp':False}]
-    # # bm.add_method(meta.RMS, param)
-    # # bm.add_method(meta.ILS, param)
-    # # bm.add_method(meta.VNS, param)
-    # # bm.add_method(meta.GRASP, param)
-    # bm.seeds = [7,13,17]
-    # bm.add_method(meta.GRASP, [{'max_tries':t, 'first_imp':True, 'K':k} 
-    #                            for t in [10, 50, 100] for k in [5, 10, 20]])
-    # bm.run()
+    # meta.GRASP(flp,100, False, 2)
+    bm= Benchmark()
+    # param = [{'max_tries':100, 'first_imp':True}, {'max_tries':100, 'first_imp':False}]
+    # bm.add_method(meta.RMS, param)
+    # bm.add_method(meta.ILS, param)
+    # bm.add_method(meta.VNS, param)
+    # bm.add_method(meta.GRASP, param)
+    bm.seeds = [7,13,17]
+    bm.add_method(meta.GRASP, [{'max_tries':t, 'first_imp':True, 'K':k} 
+                               for t in [10, 50, 100] for k in [2, 5, 10]])
+    bm.run()
