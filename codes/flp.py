@@ -4,7 +4,7 @@ from itertools import combinations, product
 import cProfile
 import os
 import heapq
-
+# from numba import njit
 
 class FLP:
     '''Single Source Capacitated Facility Location Problem (SSCFLP)
@@ -392,6 +392,7 @@ class LocalSearch:
         remaining, assigned = sol.remaining, sol.assigned
 
         # nested function to calculate the cost variation of swapping customers i and j between facilities
+        
         def delta(i: int, j: int):
             fi = assigned[i]
             fj = assigned[j]
@@ -433,6 +434,7 @@ class LocalSearch:
                 return True
         return False
 
+    
     def replace(self, sol: FLP_Solution, first_improvement=True):
         ''' Try to improve the solution by replacing a customer from one facility to another,
         if find a better solution, then sol is updated.
