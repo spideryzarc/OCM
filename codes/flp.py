@@ -375,6 +375,8 @@ class LocalSearch:
         self.facilities = np.argsort(score)
         # self.facilities = np.arange(flp.num_facilities)
         # print(score[self.facilities])
+        # the closest facility to each customer
+        self.closest_facility = np.argmin(flp.assignment_cost, axis=0)
 
     def two_exchange(self, sol: FLP_Solution, first_improvement=True):
         ''' Try to improve the solution by exchanging two customers between their facilities,
@@ -412,8 +414,10 @@ class LocalSearch:
 
         # all pairs of costumers (i,j) that are assigned to different facilities,
         # and the facilities have enough capacity to swap the customers
+        # and at least one of the costumers is assigned to a facility that is not the its closest
         pairs = ((i, j) for i, j in combinations(self.costumers, 2)
                  if assigned[i] != assigned[j]
+                 and (self.closest_facility[i] != assigned[i] or self.closest_facility[j] != assigned[j]) 
                  and remaining[assigned[i]] + demand[i] >= demand[j]
                  and remaining[assigned[j]] + demand[j] >= demand[i])
         if first_improvement:
@@ -435,7 +439,7 @@ class LocalSearch:
         return False
 
     
-    def replace(self, sol: FLP_Solution, first_improvement=True):
+    def replace(self, sol: FLP_Solution, first_improvement=True)->bool:
         ''' Try to improve the solution by replacing a customer from one facility to another,
         if find a better solution, then sol is updated.
         Parameters:
@@ -475,8 +479,12 @@ class LocalSearch:
         # all pairs (i,b) of costumers x facilities,
         # where i is not currently assigned to b
         # and b has enough capacity to attend i demand
-        pairs = ((i, b) for i, b in product(self.costumers, self.facilities)
-                 if remaining[b] >= demand[i] and assigned[i] != b)
+        # pairs = ((i, b) for i, b in product(self.costumers, self.facilities)
+        #          if remaining[b] >= demand[i] and assigned[i] != b)
+        # optimize the search by considering only the costumers that are assigned to a facility that is not the closest
+        pairs = ((i, b) for i in self.costumers 
+                    if self.closest_facility[i] != assigned[i] or sol.facility_customers_count[assigned[i]] == 1
+                    for b in self.facilities if remaining[b] >= demand[i] and assigned[i] != b)
         if first_improvement:
             imp = False
             # commit replacement if it improves the solution while searching
@@ -495,7 +503,7 @@ class LocalSearch:
                 return True
         return False
 
-    def exchange_facilities(self, sol: FLP_Solution, first_improvement=True):
+    def exchange_facilities(self, sol: FLP_Solution, first_improvement=True)->bool:
         ''' Try to improve the solution by closing a facility and assigning all its customers to a closed facility,
         if find a better solution, then sol is updated.
         Parameters:
@@ -739,39 +747,43 @@ class Metaheuristics:
             '''
         sol = FLP_Solution(flp)
         best = FLP_Solution(flp)
+        ls = LocalSearch(flp)
         costumers = np.arange(flp.num_customers)
+        #take flp attributes as local variables to avoid multiple lookups, improving performance
+        assignment_cost, opening_cost, demand, supply, total_demand, num_facilities  = \
+            flp.assignment_cost, flp.opening_cost, flp.demand, flp.supply, flp.total_demand, flp.num_facilities
         def greedy_rd():
         #generate a greedy solution with randomized decisions
             # amount of supply that should be opened, use last best supply if available
-            pre_supply = max(flp.total_demand, np.sum(flp.supply[best.facility_customers_count > 0]))
+            pre_supply = max(total_demand, np.sum(supply[best.facility_customers_count > 0]))
             sol.reset()
             #shuffle costumers to avoid bias
             np.random.shuffle(costumers)
             # current supply opened
-            suply = 0
+            sup = 0
             # Open facilities and assign customers to its closest facility when facility is already opened
             for c in costumers:
                 #closest facility to customer c
-                f = np.argmin(flp.assignment_cost[:,c])
-                if sol.remaining[f] < flp.demand[c]:
+                f = ls.closest_facility[c]
+                if sol.remaining[f] < demand[c]:
                     continue
                 if sol.facility_customers_count[f]:
                     # if the facility is already opened, assign the customer
                         sol.assigned[c] = f
-                        sol.remaining[f] -= flp.demand[c]
-                elif suply < pre_supply:
+                        sol.remaining[f] -= demand[c]
+                elif sup < pre_supply:
                     # if the facility is closed and the pre_supply is not satisfied, open the facility and assign the customer
                     sol.assigned[c] = f
                     sol.facility_customers_count[f] = 1
-                    sol.remaining[f] -= flp.demand[c]
-                    suply += flp.supply[f]
+                    sol.remaining[f] -= demand[c]
+                    sup += supply[f]
             #end_for
                     
             #nested function to calculate the cost of assigning customer i to facility j
             def delta(i: int, j: int) -> float:
-                c = flp.assignment_cost[j, i]
+                c = assignment_cost[j, i]
                 if sol.facility_customers_count[j] == 0:
-                    c += flp.opening_cost[j]
+                    c += opening_cost[j]
                 return c
             #end_delta
             #costumers to be assigned
@@ -779,8 +791,8 @@ class Metaheuristics:
             #assign the remaining costumers using a greedy randomized construction
             for _ in range(len(costumers_to_assign)):
                 pairs = ((i, j) for i in costumers_to_assign if sol.assigned[i]==-1 
-                            for j in range(flp.num_facilities)
-                            if sol.remaining[j] >= flp.demand[i])
+                            for j in range(num_facilities)
+                            if sol.remaining[j] >= demand[i])
                 candidates = []
                 for i,j in pairs:
                     #retain the K best candidates
@@ -793,18 +805,16 @@ class Metaheuristics:
                 #assign the customer
                 sol.assigned[i] = j
                 sol.facility_customers_count[j] = 1
-                sol.remaining[j] -= flp.demand[i]
+                sol.remaining[j] -= demand[i]
             # ajust sol attributes
             sol.facility_customers_count[:] = np.bincount(
-                sol.assigned, minlength=flp.num_facilities)
+                sol.assigned, minlength=num_facilities)
             sol.evaluate()
             assert sol.is_valid(), 'Invalid solution'
             
             return
         
         
-        ch = ConstructionHeuristics(flp)
-        ls = LocalSearch(flp)
         ite = 0
         while ite < max_tries:
             ite += 1
@@ -1004,6 +1014,6 @@ if __name__ == '__main__':
     # bm.add_method(meta.VNS, param)
     # bm.add_method(meta.GRASP, param)
     bm.seeds = [7,13,17]
-    bm.add_method(meta.GRASP, [{'max_tries':t, 'first_imp':True, 'K':k} 
-                               for t in [10, 50, 100] for k in [2, 5, 10]])
+    bm.add_method(meta.GRASP, [{'max_tries':t, 'first_imp':fi, 'K':k} 
+                               for t in [10, 50, 100] for k in [2, 5, 10] for fi in [True, False]])
     bm.run()
