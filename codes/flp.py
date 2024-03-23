@@ -811,10 +811,9 @@ class Metaheuristics:
                 sol.assigned, minlength=num_facilities)
             sol.evaluate()
             assert sol.is_valid(), 'Invalid solution'
-            
-            return
+        #end_greedy_rd
         
-        
+        # GRASP main loop
         ite = 0
         while ite < max_tries:
             ite += 1
@@ -826,7 +825,9 @@ class Metaheuristics:
                 ite = 0
                 if __debug__: print('grasp', best.objective)
         return best
-
+    #end_GRASP
+    
+#end_Metaheuristics
 
 class MIP:
     ''' Mixed Integer Programming for Facility Location Problem,
