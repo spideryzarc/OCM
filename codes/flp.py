@@ -754,13 +754,11 @@ class Metaheuristics:
             flp.assignment_cost, flp.opening_cost, flp.demand, flp.supply, flp.total_demand, flp.num_facilities
         def greedy_rd():
         #generate a greedy solution with randomized decisions
-            # amount of supply that should be opened, use last best supply if available
-            pre_supply = max(total_demand, np.sum(supply[best.facility_customers_count > 0]))
             sol.reset()
             #shuffle costumers to avoid bias
             np.random.shuffle(costumers)
-            # current supply opened
-            sup = 0
+            # current opening cost payed
+            opening = 0
             # Open facilities and assign customers to its closest facility when facility is already opened
             for c in costumers:
                 #closest facility to customer c
@@ -771,12 +769,12 @@ class Metaheuristics:
                     # if the facility is already opened, assign the customer
                         sol.assigned[c] = f
                         sol.remaining[f] -= demand[c]
-                elif sup < pre_supply:
-                    # if the facility is closed and the pre_supply is not satisfied, open the facility and assign the customer
+                elif opening+opening_cost[f] <= best_opening_cost:
+                    # if the facility is closed and the opening cost is affordable, open the facility
                     sol.assigned[c] = f
                     sol.facility_customers_count[f] = 1
                     sol.remaining[f] -= demand[c]
-                    sup += supply[f]
+                    opening += opening_cost[f]
             #end_for
                     
             #nested function to calculate the cost of assigning customer i to facility j
@@ -814,6 +812,12 @@ class Metaheuristics:
         #end_greedy_rd
         
         # GRASP main loop
+        ch = ConstructionHeuristics(flp)
+        best = ch.greedy(True)
+        ls.VND(best, first_imp)
+        # amount of open cost payed in the best solution available
+        best_opening_cost = np.sum(opening_cost[np.flatnonzero(best.facility_customers_count)])
+            
         ite = 0
         while ite < max_tries:
             ite += 1
@@ -822,6 +826,8 @@ class Metaheuristics:
             #print(sol.objective)
             if sol.objective + 1e-6 < best.objective:
                 best.copy_from(sol)
+                # amount of open cost payed in the best solution available
+                best_opening_cost = np.sum(opening_cost[np.flatnonzero(best.facility_customers_count)])
                 ite = 0
                 if __debug__: print('grasp', best.objective)
         return best
