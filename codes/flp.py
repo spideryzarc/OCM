@@ -833,6 +833,84 @@ class Metaheuristics:
         return best
     #end_GRASP
     
+    @staticmethod
+    def GLS(flp:FLP, max_tries=1000, first_imp=True, alpha=0.8, beta=1.1):
+        '''Guided Local Search, a metaheuristic that changes the objective function to guide the search
+        Parameters:
+            flp: FLP - the problem to be solved
+            max_tries: int (default 1000) maximum number of tries without improvement
+            first_imp: bool (default True) if True the local search will use first improvement
+        Returns:
+            FLP_Solution or None - a feasible solution or None if it was not possible to create a feasible solution
+            '''
+        
+        original_assignment_cost = flp.assignment_cost.copy()
+        original_opening_cost = flp.opening_cost.copy()
+        
+        def cost_original(sol: FLP_Solution):
+            '''Calculate the objective function of the solution using the original costs
+            Parameters:
+                sol: FLP_Solution - the solution to be evaluated
+            Returns:
+                float - the objective function value
+                '''
+            return np.sum(original_assignment_cost[sol.assigned, np.arange(flp.num_customers)]) + \
+                np.sum(original_opening_cost[np.flatnonzero(sol.facility_customers_count)])
+            
+        def perturb_costs(sol: FLP_Solution):
+            '''Perturb the assignment costs of the solution
+            Parameters:
+                sol: FLP_Solution - the solution to be perturbed
+                '''
+            #take flp attributes as local variables to avoid multiple lookups, improving performance
+            assignment_cost, opening_cost, demand = flp.assignment_cost, flp.opening_cost, flp.demand
+            #take sol attributes as local variables to avoid multiple lookups, improving performance
+            facility_customers_count, remaining, assigned = sol.facility_customers_count, sol.remaining, sol.assigned
+            #restore parcially the original costs
+            assignment_cost[:] = original_assignment_cost*(1-alpha) + assignment_cost*alpha
+            #perturb the assignment costs
+            for i in range(flp.num_customers):
+                j = assigned[i]
+                #perturb the assignment cost
+                assignment_cost[j, i] *= np.random.uniform(1, beta)
+            #recalculate the objective function
+            sol.evaluate()
+            assert sol.is_valid(), 'Invalid solution'
+        ch = ConstructionHeuristics(flp)
+        ls = LocalSearch(flp)
+        best = ch.greedy(True)
+        ls.VND(best, first_imp)
+        if __debug__: print('gls', best.objective)
+        sol = FLP_Solution(flp)
+        sol.copy_from(best)
+        ite = 0
+        while ite < max_tries:
+            ite += 1
+            # perturb costs
+            perturb_costs(sol)
+            ls.VND(sol, first_imp)
+            sol.objective = cost_original(sol)
+            # print('***', sol.objective)
+            # if sol.objective > best.objective*1.03:
+            #     #restore the original costs
+            #     flp.assignment_cost[:] = original_assignment_cost
+            #     flp.opening_cost[:] = original_opening_cost
+            #     ls.VND(sol, first_imp)
+            if sol.objective + 1e-6 < best.objective:
+                #restore the original costs
+                flp.assignment_cost[:] = original_assignment_cost
+                flp.opening_cost[:] = original_opening_cost
+                ls.VND(sol, first_imp)
+                best.copy_from(sol)
+                ite = 0
+                if __debug__: print('gls', best.objective)
+                
+        #restore the original costs
+        flp.assignment_cost[:] = original_assignment_cost
+        flp.opening_cost[:] = original_opening_cost
+        return best
+        
+    
 #end_Metaheuristics
 
 class MIP:
@@ -1005,7 +1083,7 @@ if __name__ == '__main__':
     # ls.VND(sol)
     # print(sol)
     # fix random seed
-    np.random.seed(0)
+    # np.random.seed(0)
     meta = Metaheuristics()
     # sol = meta.RMS(100)
     # cProfile.run('sol = meta.RMS(500)', sort='tottime')
@@ -1014,13 +1092,14 @@ if __name__ == '__main__':
     # cProfile.run('sol = meta.GRASP(flp,100, False, 5)', sort='tottime')
     # sol = meta.VNS(flp,1000)
     # meta.GRASP(flp,100, False, 2)
-    bm= Benchmark()
-    # param = [{'max_tries':100, 'first_imp':True}, {'max_tries':100, 'first_imp':False}]
-    # bm.add_method(meta.RMS, param)
-    # bm.add_method(meta.ILS, param)
-    # bm.add_method(meta.VNS, param)
-    # bm.add_method(meta.GRASP, param)
-    bm.seeds = [7,13,17]
-    bm.add_method(meta.GRASP, [{'max_tries':t, 'first_imp':fi, 'K':k} 
-                               for t in [10, 50, 100] for k in [2, 5, 10] for fi in [True, False]])
-    bm.run()
+    meta.GLS(flp,100,alpha=0.01, beta=1.5)
+    # bm= Benchmark()
+    # # param = [{'max_tries':100, 'first_imp':True}, {'max_tries':100, 'first_imp':False}]
+    # # bm.add_method(meta.RMS, param)
+    # # bm.add_method(meta.ILS, param)
+    # # bm.add_method(meta.VNS, param)
+    # # bm.add_method(meta.GRASP, param)
+    # bm.seeds = [7,13,17]
+    # bm.add_method(meta.GRASP, [{'max_tries':t, 'first_imp':fi, 'K':k} 
+    #                            for t in [10, 50, 100] for k in [2, 5, 10] for fi in [True, False]])
+    # bm.run()
