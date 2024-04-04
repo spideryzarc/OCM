@@ -877,8 +877,9 @@ class Metaheuristics:
             # perturb costs
             perturb_costs(sol)
             ls.VND(sol, first_imp)
-            #swap assignment costs
+            #swap assignment costs, return to the original costs
             flp.assignment_cost, original_assignment_cost = original_assignment_cost, flp.assignment_cost
+            #apply VND from the perturbed solution under the original costs in a copy of the solution
             tmp.copy_from(sol)
             tmp.evaluate()
             ls.VND(tmp, first_imp)
@@ -887,9 +888,9 @@ class Metaheuristics:
                 best.copy_from(tmp)
                 ite = 0
                 if __debug__: print('gls', best.objective)            
-            #swap assignment costs
+            #swap assignment costs, return to the perturbed costs
             flp.assignment_cost, original_assignment_cost = original_assignment_cost, flp.assignment_cost
-        #restore the original costs
+        #restore the original costs before return
         flp.assignment_cost[:] = original_assignment_cost
         return best
         
