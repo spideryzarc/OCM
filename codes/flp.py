@@ -840,42 +840,29 @@ class Metaheuristics:
             flp: FLP - the problem to be solved
             max_tries: int (default 1000) maximum number of tries without improvement
             first_imp: bool (default True) if True the local search will use first improvement
+            alpha: float (default 0.8) weight of the original costs in the perturbed costs
+            beta: float (default 1.1) factor to perturb the assignment costs
         Returns:
             FLP_Solution or None - a feasible solution or None if it was not possible to create a feasible solution
             '''
         
         original_assignment_cost = flp.assignment_cost.copy()
-        original_opening_cost = flp.opening_cost.copy()
-        
-        def cost_original(sol: FLP_Solution):
-            '''Calculate the objective function of the solution using the original costs
-            Parameters:
-                sol: FLP_Solution - the solution to be evaluated
-            Returns:
-                float - the objective function value
-                '''
+        #nested function to calculate the original cost of a solution
+        def cost_original(sol: FLP_Solution)->float:
             return np.sum(original_assignment_cost[sol.assigned, np.arange(flp.num_customers)]) + \
-                np.sum(original_opening_cost[np.flatnonzero(sol.facility_customers_count)])
-            
-        def perturb_costs(sol: FLP_Solution):
-            '''Perturb the assignment costs of the solution
-            Parameters:
-                sol: FLP_Solution - the solution to be perturbed
-                '''
-            #take flp attributes as local variables to avoid multiple lookups, improving performance
-            assignment_cost, opening_cost, demand = flp.assignment_cost, flp.opening_cost, flp.demand
-            #take sol attributes as local variables to avoid multiple lookups, improving performance
-            facility_customers_count, remaining, assigned = sol.facility_customers_count, sol.remaining, sol.assigned
+                np.sum(flp.opening_cost[np.flatnonzero(sol.facility_customers_count)])
+        #take flp attributes as local variables to avoid multiple lookups, improving performance
+        assignment_cost = flp.assignment_cost
+        #Apply the perturbation to the costs    
+        def perturb_costs(sol: FLP_Solution)->None:
             #restore parcially the original costs
             assignment_cost[:] = original_assignment_cost*(1-alpha) + assignment_cost*alpha
-            #perturb the assignment costs
+            #perturb the assignment cost for each customer assigned to a facility 
             for i in range(flp.num_customers):
-                j = assigned[i]
-                #perturb the assignment cost
-                assignment_cost[j, i] *= np.random.uniform(1, beta)
+                assignment_cost[sol.assigned[i], i] *= np.random.uniform(1, beta)
             #recalculate the objective function
             sol.evaluate()
-            assert sol.is_valid(), 'Invalid solution'
+        #end_perturb_costs
         ch = ConstructionHeuristics(flp)
         ls = LocalSearch(flp)
         best = ch.greedy(True)
@@ -883,31 +870,27 @@ class Metaheuristics:
         if __debug__: print('gls', best.objective)
         sol = FLP_Solution(flp)
         sol.copy_from(best)
+        tmp = FLP_Solution(flp)
         ite = 0
         while ite < max_tries:
             ite += 1
             # perturb costs
             perturb_costs(sol)
             ls.VND(sol, first_imp)
-            sol.objective = cost_original(sol)
-            # print('***', sol.objective)
-            # if sol.objective > best.objective*1.03:
-            #     #restore the original costs
-            #     flp.assignment_cost[:] = original_assignment_cost
-            #     flp.opening_cost[:] = original_opening_cost
-            #     ls.VND(sol, first_imp)
-            if sol.objective + 1e-6 < best.objective:
+            #swap assignment costs
+            flp.assignment_cost, original_assignment_cost = original_assignment_cost, flp.assignment_cost
+            tmp.copy_from(sol)
+            tmp.evaluate()
+            ls.VND(tmp, first_imp)
+            if tmp.objective + 1e-6 < best.objective:
                 #restore the original costs
-                flp.assignment_cost[:] = original_assignment_cost
-                flp.opening_cost[:] = original_opening_cost
-                ls.VND(sol, first_imp)
-                best.copy_from(sol)
+                best.copy_from(tmp)
                 ite = 0
-                if __debug__: print('gls', best.objective)
-                
+                if __debug__: print('gls', best.objective)            
+            #swap assignment costs
+            flp.assignment_cost, original_assignment_cost = original_assignment_cost, flp.assignment_cost
         #restore the original costs
         flp.assignment_cost[:] = original_assignment_cost
-        flp.opening_cost[:] = original_opening_cost
         return best
         
     
@@ -1092,7 +1075,7 @@ if __name__ == '__main__':
     # cProfile.run('sol = meta.GRASP(flp,100, False, 5)', sort='tottime')
     # sol = meta.VNS(flp,1000)
     # meta.GRASP(flp,100, False, 2)
-    meta.GLS(flp,100,alpha=0.01, beta=1.5)
+    meta.GLS(flp,100,alpha=0.7, beta=1.2)
     # bm= Benchmark()
     # # param = [{'max_tries':100, 'first_imp':True}, {'max_tries':100, 'first_imp':False}]
     # # bm.add_method(meta.RMS, param)
