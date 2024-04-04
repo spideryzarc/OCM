@@ -4,6 +4,7 @@ from itertools import combinations, product
 import cProfile
 import os
 import heapq
+from collections import deque
 # from numba import njit
 
 class FLP:
@@ -886,6 +887,7 @@ class Metaheuristics:
             if tmp.objective + 1e-6 < best.objective:
                 #restore the original costs
                 best.copy_from(tmp)
+                sol.copy_from(tmp)
                 ite = 0
                 if __debug__: print('gls', best.objective)            
             #swap assignment costs, return to the perturbed costs
@@ -893,6 +895,65 @@ class Metaheuristics:
         #restore the original costs before return
         flp.assignment_cost[:] = original_assignment_cost
         return best
+    @staticmethod
+    def Tabu(flp: FLP, max_tries=1000, first_imp=True, tenure=10):
+        '''Tabu Search, a metaheuristic that avoids revisiting the same solutions
+        Parameters:
+            flp: FLP - the problem to be solved
+            max_tries: int (default 1000) maximum number of tries without improvement
+            first_imp: bool (default True) if True the local search will use first improvement
+            tenure: int (default 10) number of iterations that a rule is considered tabu
+        Returns:
+            FLP_Solution or None - a feasible solution or None if it was not possible to create a feasible solution
+            '''
+        original_assignment_cost = flp.assignment_cost.copy()
+        tabu_list = deque(maxlen=tenure)
+        def add_tabu(sol: FLP_Solution):
+            #choose a pair (i,j) in sol to be tabu
+            i = np.random.randint(flp.num_customers)
+            j = sol.assigned[i]
+            #update the assignment cost
+            flp.assignment_cost[j, i] += 1e3
+            sol.objective+=1e3
+            #add the pair to the tabu list
+            tabu_list.append((i,j))
+            #pop the oldest pair if the list is full
+            if len(tabu_list) > tenure:
+                i,j = tabu_list.popleft()
+                flp.assignment_cost[j, i] -= 1e3
+                if sol.assigned[i] == j:
+                    sol.objective -= 1e3
+        #end_add_tabu
+        def reset_tabu():
+            #restore the original costs
+            flp.assignment_cost[:] = original_assignment_cost
+            tabu_list.clear()
+        #end_reset_tabu        
+        ch = ConstructionHeuristics(flp)
+        ls = LocalSearch(flp)
+        best = ch.greedy(True)
+        ls.VND(best, first_imp)
+        if __debug__: print('TABU', best.objective)
+        sol = FLP_Solution(flp)
+        sol.copy_from(best)
+        ite = 0
+        while ite < max_tries:
+            ite += 1
+            # perturb costs
+            add_tabu(sol)
+            #FIXME: uma otimização no vnd pode está ignorando a solução tabu
+            ls.VND(sol, first_imp)
+            if sol.objective + 1e-6 < best.objective:
+                #restore the original costs
+                best.copy_from(sol)
+                ite = 0
+                reset_tabu()
+                if __debug__: print('TABU', best.objective)            
+        #restore the original costs before return
+        flp.assignment_cost[:] = original_assignment_cost
+        return best
+            
+        
         
     
 #end_Metaheuristics
@@ -1076,7 +1137,8 @@ if __name__ == '__main__':
     # cProfile.run('sol = meta.GRASP(flp,100, False, 5)', sort='tottime')
     # sol = meta.VNS(flp,1000)
     # meta.GRASP(flp,100, False, 2)
-    meta.GLS(flp,100,alpha=0.7, beta=1.2)
+    # meta.GLS(flp,100,alpha=0.7, beta=1.2)
+    meta.Tabu(flp,1000,tenure=5)
     # bm= Benchmark()
     # # param = [{'max_tries':100, 'first_imp':True}, {'max_tries':100, 'first_imp':False}]
     # # bm.add_method(meta.RMS, param)
