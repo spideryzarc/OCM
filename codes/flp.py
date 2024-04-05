@@ -907,22 +907,37 @@ class Metaheuristics:
             FLP_Solution or None - a feasible solution or None if it was not possible to create a feasible solution
             '''
         original_assignment_cost = flp.assignment_cost.copy()
-        tabu_list = deque(maxlen=tenure)
+        tabu_list = deque(maxlen=tenure+1)
         def add_tabu(sol: FLP_Solution):
             #choose a pair (i,j) in sol to be tabu
             i = np.random.randint(flp.num_customers)
             j = sol.assigned[i]
+            # remove client i from facility j
+            sol.objective-= flp.assignment_cost[j, i]
+            sol.assigned[i] = -1
+            sol.remaining[j] += flp.demand[i]
+            sol.facility_customers_count[j] -= 1
+            if sol.facility_customers_count[j] == 0:
+                sol.objective -= flp.opening_cost[j]
             #update the assignment cost
-            flp.assignment_cost[j, i] += 1e3
-            sol.objective+=1e3
-            #add the pair to the tabu list
+            flp.assignment_cost[j, i] += 1e6
+            #add the pair to the end of the tabu list
             tabu_list.append((i,j))
             #pop the oldest pair if the list is full
             if len(tabu_list) > tenure:
-                i,j = tabu_list.popleft()
-                flp.assignment_cost[j, i] -= 1e3
-                if sol.assigned[i] == j:
-                    sol.objective -= 1e3
+                pi,pj = tabu_list.popleft()
+                flp.assignment_cost[pj, pi] -= 1e6
+                if sol.assigned[pi] == pj:
+                    sol.objective -= 1e6
+            #assign client i to a cheaper facility
+            facilities = np.flatnonzero(sol.remaining >= flp.demand[i])
+            j = min(facilities, key=lambda j: flp.assignment_cost[j, i] + (0 if sol.facility_customers_count[j] > 0 else flp.opening_cost[j]))
+            sol.assigned[i] = j
+            sol.objective += flp.assignment_cost[j, i]
+            sol.remaining[j] -= flp.demand[i]
+            sol.facility_customers_count[j] += 1
+            if sol.facility_customers_count[j] == 1:
+                sol.objective += flp.opening_cost[j]      
         #end_add_tabu
         def reset_tabu():
             #restore the original costs
@@ -939,15 +954,31 @@ class Metaheuristics:
         ite = 0
         while ite < max_tries:
             ite += 1
+            sol.copy_from(best)
+            sol.evaluate()
             # perturb costs
             add_tabu(sol)
-            #FIXME: uma otimização no vnd pode está ignorando a solução tabu
             ls.VND(sol, first_imp)
+            if ite % tenure == 0:
+                #try vnd with original costs
+                #swap assignment costs, return to the original costs
+                flp.assignment_cost, original_assignment_cost = original_assignment_cost, flp.assignment_cost
+                sol.evaluate()
+                ls.VND(sol, first_imp)
+                if sol.objective + 1e-6 < best.objective:
+                    #swap assignment costs, return to the perturbed costs
+                    flp.assignment_cost, original_assignment_cost = original_assignment_cost, flp.assignment_cost
+                    reset_tabu()
+                else:
+                    #swap assignment costs, return to the perturbed costs
+                    flp.assignment_cost, original_assignment_cost = original_assignment_cost, flp.assignment_cost
+                    sol.evaluate()
+            # print(sol.objective, best.objective)
             if sol.objective + 1e-6 < best.objective:
-                #restore the original costs
+                reset_tabu()
+                ls.VND(sol, first_imp)
                 best.copy_from(sol)
                 ite = 0
-                reset_tabu()
                 if __debug__: print('TABU', best.objective)            
         #restore the original costs before return
         flp.assignment_cost[:] = original_assignment_cost
@@ -1138,7 +1169,7 @@ if __name__ == '__main__':
     # sol = meta.VNS(flp,1000)
     # meta.GRASP(flp,100, False, 2)
     # meta.GLS(flp,100,alpha=0.7, beta=1.2)
-    meta.Tabu(flp,1000,tenure=5)
+    meta.Tabu(flp,1000,tenure=40)
     # bm= Benchmark()
     # # param = [{'max_tries':100, 'first_imp':True}, {'max_tries':100, 'first_imp':False}]
     # # bm.add_method(meta.RMS, param)
