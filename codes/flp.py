@@ -944,6 +944,7 @@ class Metaheuristics:
             flp.assignment_cost[:] = original_assignment_cost
             tabu_list.clear()
         #end_reset_tabu        
+                    
         ch = ConstructionHeuristics(flp)
         ls = LocalSearch(flp)
         best = ch.greedy(True)
@@ -952,28 +953,17 @@ class Metaheuristics:
         sol = FLP_Solution(flp)
         sol.copy_from(best)
         ite = 0
+        tmp = FLP_Solution(flp)
         while ite < max_tries:
             ite += 1
             sol.copy_from(best)
             sol.evaluate()
-            # perturb costs
             add_tabu(sol)
+            Metaheuristics.close_facility(sol)
             ls.VND(sol, first_imp)
-            if ite % tenure == 0:
-                #try vnd with original costs
-                #swap assignment costs, return to the original costs
-                flp.assignment_cost, original_assignment_cost = original_assignment_cost, flp.assignment_cost
-                sol.evaluate()
-                ls.VND(sol, first_imp)
-                if sol.objective + 1e-6 < best.objective:
-                    #swap assignment costs, return to the perturbed costs
-                    flp.assignment_cost, original_assignment_cost = original_assignment_cost, flp.assignment_cost
-                    reset_tabu()
-                else:
-                    #swap assignment costs, return to the perturbed costs
-                    flp.assignment_cost, original_assignment_cost = original_assignment_cost, flp.assignment_cost
-                    sol.evaluate()
-            # print(sol.objective, best.objective)
+            if sol.objective > best.objective*1.05:
+                reset_tabu()
+                ls.VND(sol,first_imp)
             if sol.objective + 1e-6 < best.objective:
                 reset_tabu()
                 ls.VND(sol, first_imp)
@@ -983,8 +973,43 @@ class Metaheuristics:
         #restore the original costs before return
         flp.assignment_cost[:] = original_assignment_cost
         return best
-            
-        
+    
+    
+    @staticmethod
+    def SA(flp: FLP, max_tries=1000, first_imp=True, T0=1e3, alpha=0.99):
+        '''Simulated Annealing, a metaheuristic that accepts worse solutions with a probability that decreases with time
+        Parameters:
+            flp: FLP - the problem to be solved
+            max_tries: int (default 1000) maximum number of tries without improvement
+            first_imp: bool (default True) if True the local search will use first improvement
+            T0: float (default 1e6) initial temperature
+            alpha: float (default 0.99) cooling factor
+        Returns:
+            FLP_Solution or None - a feasible solution or None if it was not possible to create a feasible solution
+            '''
+        ch = ConstructionHeuristics(flp)
+        best = ch.greedy(True) 
+        ls = LocalSearch(flp)
+        ls.VND(best, first_imp) 
+        current = FLP_Solution(flp)
+        current.copy_from(best)
+        sol = FLP_Solution(flp)
+        ite = 0
+        print('SA', best.objective)
+        while ite < max_tries:
+            ite += 1
+            sol.copy_from(current)
+            Metaheuristics.close_facility(sol,3)
+            ls.VND(sol, first_imp)
+            delta = (sol.objective - current.objective)/best.objective
+            if delta < -1e-3 or np.random.rand() < np.exp(-delta/T0):
+                current.copy_from(sol)
+                # print('---', current.objective)
+                if current.objective+1e-6 < best.objective:
+                    best.copy_from(current)
+                    ite = 0
+                    if __debug__: print('SA', best.objective)
+            T0 *= alpha
         
     
 #end_Metaheuristics
@@ -1169,7 +1194,8 @@ if __name__ == '__main__':
     # sol = meta.VNS(flp,1000)
     # meta.GRASP(flp,100, False, 2)
     # meta.GLS(flp,100,alpha=0.7, beta=1.2)
-    meta.Tabu(flp,1000,tenure=40)
+    # meta.Tabu(flp,1000,tenure=30)
+    meta.SA(flp,100)
     # bm= Benchmark()
     # # param = [{'max_tries':100, 'first_imp':True}, {'max_tries':100, 'first_imp':False}]
     # # bm.add_method(meta.RMS, param)
