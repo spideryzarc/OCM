@@ -959,7 +959,7 @@ class Metaheuristics:
             sol.copy_from(best)
             sol.evaluate()
             add_tabu(sol)
-            Metaheuristics.close_facility(sol)
+            Metaheuristics.close_facility(sol,3)
             ls.VND(sol, first_imp)
             if sol.objective > best.objective*1.05:
                 reset_tabu()
@@ -1194,8 +1194,8 @@ if __name__ == '__main__':
     # sol = meta.VNS(flp,1000)
     # meta.GRASP(flp,100, False, 2)
     # meta.GLS(flp,100,alpha=0.7, beta=1.2)
-    # meta.Tabu(flp,1000,tenure=30)
-    meta.SA(flp,100)
+    meta.Tabu(flp,100,tenure=30)
+    # meta.SA(flp,1000)
     # bm= Benchmark()
     # # param = [{'max_tries':100, 'first_imp':True}, {'max_tries':100, 'first_imp':False}]
     # # bm.add_method(meta.RMS, param)
