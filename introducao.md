@@ -246,6 +246,7 @@ Há muitas metaheurísticas diferentes, cada uma com suas próprias característ
 - **Exemplos:** Algoritmos híbridos que combinam programação linear inteira com busca local ou algoritmos genéticos.
 - **Aplicações:** Problemas de otimização complexos que requerem uma abordagem mista para serem resolvidos de forma eficiente.
 
+---
 
 ## Conclusão
 
