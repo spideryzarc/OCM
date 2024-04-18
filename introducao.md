@@ -196,9 +196,23 @@ As metaheurísticas precisam de um ponto de partida para iniciar a busca.
 A maior parte das metaheurísticas usam a busca local como um componente fundamental.
 
 - **Busca Local:** Estratégia que explora a vizinhança de uma solução atual para encontrar uma solução melhor.
-- **Métodos de Descida:** Algoritmos que exploram a vizinhança de uma solução atual e se movem para um vizinho melhor, até que não haja mais melhorias possíveis (**ótimo local**). Podem ser:
-  - **Primeiro Melhor:** Aceita o primeiro vizinho melhor encontrado para se mover.
-  - **Melhor Melhor:** Explora todos os vizinhos e escolhe o melhor deles para se mover.
+- **Métodos de Descida:** Algoritmos que exploram a vizinhança de uma solução atual e se movem para um vizinho melhor, até que não haja mais melhorias possíveis (**ótimo local**). Conhecidos também como *hill climbing*.
+---
+
+
+
+![bg right:41% height:95%](images/hillclimb.drawio.svg)
+
+- A solução inicial pode ser gerada por um método construtivo ou dada como entrada.
+- A `busca_local` explora a vizinhança da solução atual e retorna uma solução melhor, que pode ser a **primeira solução** melhor encontrada ou a **melhor solução** da vizinhança.
+
+
+---
+![bg right:30% height:95%](images/vnd.drawio.svg)
+
+- **VND:** *Variable Neighborhood Descent*, é um método que alterna entre diferentes vizinhanças para explorar o espaço de busca.
+- O fluxograma mostra um exemplo de VND com três vizinhanças diferentes.
+- A ordem e o número de vizinhanças podem impactar o desempenho do algoritmo.
 
 ---
 ### Intensificação vs Diversificação
@@ -229,13 +243,6 @@ Há muitas metaheurísticas diferentes, cada uma com suas próprias característ
   - EDA (Estimation of Distribution Algorithm)
 
 > Nada impede de combinar diferentes metaheurísticas para resolver um problema, essa é uma abordagem comum e chamada de híbrida.
----
-- Algumas metaheurísticas pitorescas:
-  - **Harmony Search:** Inspirada no processo de improvisação musical.
-  - **Firefly Algorithm:** Baseada no comportamento de vaga-lumes.
-  - **Cuckoo Search:** Inspirada no parasitismo de aves.
-  - **Bat Algorithm:** Baseada no comportamento de morcegos.
-  - **Flower Pollination Algorithm:** Inspirada na polinização de flores.
 ---
 
 ### Matheuristicas
