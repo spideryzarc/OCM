@@ -70,7 +70,8 @@ $$ Nota = \frac{p_1+p_2+pf}{3}$$
 <!-- _backgroundColor: black -->
 <!-- _color: white -->
 
-## "Todos os modelos são errados, mas alguns são úteis!"
+"Todos os modelos são errados, mas alguns são úteis!"
+-
 
 ---
 
@@ -81,7 +82,8 @@ $$ Nota = \frac{p_1+p_2+pf}{3}$$
     - Caminho mínimo.
     - Árvore geradora mínima.
     - Localização de facilidades.
-    - Roteirização de veículos. 
+    - Roteirização de veículos.
+    - Escala de horários. 
 
 ---
 
@@ -119,6 +121,131 @@ $$ Nota = \frac{p_1+p_2+pf}{3}$$
 - **Necessidade de Metaheurísticas:** Estratégias inteligentes são necessárias para encontrar soluções de boa qualidade em um tempo aceitável.
 
 ---
+
+## Metaheurísticas
+
+- **Definição:** Métodos gerais e flexíveis para resolver problemas de otimização, que podem ser aplicados a uma ampla variedade de problemas.
+- **Características:** Não garantem a solução ótima, mas são capazes de encontrar soluções de boa qualidade em tempo razoável.
+
+
+---
+
+## Conceitos Básicos
+
+---
+### Espaço de Busca
+
+O que faz das metaheurísticas uma abordagem genérica é o fato de serem projetadas para resolver o **problema de busca**
+
+- **Problema de Busca:** Dado um conjunto de soluções, encontrar a melhor solução de acordo com um critério de otimização.
+- **Espaço de Busca:** Conjunto de todas as possíveis soluções para um problema.
+
+> As metaheurísticas não são descritas em termos de um problema específico, mas sim em termos de um **espaço de busca**.
+
+---
+- Em geral, usamos espaços de busca para descrever de forma metafórica o funcionamento de uma metaheurística.
+  - Gráfico 2D: Espaço de busca x Qualidade da solução.
+  - Gráfico mapa de calor: Espaço de busca (2D) x Função objetivo (gradiente de cor). 
+
+---
+### Função Objetivo
+
+- **Função Objetivo:** Função que atribui um valor numérico a cada solução candidata, representando sua qualidade de acordo com o critério de otimização.
+- **Função de Avaliação:** Certas abordagens de otimização, adaptam a função objetivo para uma função de avaliação, que é uma função que não necessariamente representa a qualidade da solução, mas sim a adequação da solução para a metaheurística.
+
+---
+### Vizinhança
+
+A vizinhança é uma noção fundamental em muitas metaheurísticas, como busca local e algoritmos genéticos.
+
+- **Vizinhança:** Conjunto de soluções que são "próximas" de uma solução dada.
+- Geralmente, um vizinho é obtido a partir de uma solução atual por meio de uma pequena modificação.
+
+
+---
+### Princípio da Localidade
+
+- **Princípio da Localidade:** A ideia de que soluções de alta qualidade tendem a estar próximas umas das outras no espaço de busca.
+- Pequenas modificações em uma solução de alta qualidade devem resultar em soluções de qualidade semelhante.
+- Se a função objetivo for muito sensível ou nada sensível a pequenas modificações, as metaheurísticas podem não ser eficazes.
+- Nestes casos podemos usar um função de avaliação ou trocar a natureza das modificações.
+  
+---
+### Ótimo Global e Ótimo Local
+
+- **Ótimo Global:** A melhor solução possível para um problema de otimização.
+- **Ótimo Local:** Uma solução que é a melhor em sua vizinhança, mas não necessariamente a melhor globalmente.
+
+> O desafio das metaheurísticas é encontrar o ótimo global, evitando ficar preso em ótimos locais.
+
+---
+### Método Construtivo
+
+As metaheurísticas precisam de um ponto de partida para iniciar a busca. 
+
+- **Definição:** Abordagem que constrói uma solução passo a passo, adicionando elementos de acordo com um critério específico.
+- Na maioria das vezes, criar uma solução viável não é complicado,
+- Em certos casos, criar umas solução viável pode ser um problema em si. Neste casos podemos admitir soluções inviáveis e corrigi-las posteriormente.
+- Comumente temos métdos construtivos:
+  - Totalmente aleatórios.
+  - Gulosos,
+  - Guloso Randomizado.  
+---
+### Busca Local e Métodos de Descida
+
+A maior parte das metaheurísticas usam a busca local como um componente fundamental.
+
+- **Busca Local:** Estratégia que explora a vizinhança de uma solução atual para encontrar uma solução melhor.
+- **Métodos de Descida:** Algoritmos que exploram a vizinhança de uma solução atual e se movem para um vizinho melhor, até que não haja mais melhorias possíveis (**ótimo local**). Podem ser:
+  - **Primeiro Melhor:** Aceita o primeiro vizinho melhor encontrado para se mover.
+  - **Melhor Melhor:** Explora todos os vizinhos e escolhe o melhor deles para se mover.
+
+---
+### Intensificação vs Diversificação
+Um conceito que lidamos no projeto de metaheurísticas é a **intensificação** vs **diversificação**.
+
+- **Intensificação:** Concentrar a busca em torno de regiões promissoras do espaço de busca.
+- **Diversificação:** Explorar diferentes regiões do espaço de busca para evitar ficar preso em ótimos locais.
+
+- Se um método demora muito para apresentar um bom resultado, pode ser que ele esteja muito diversificado
+- Se um método não apresenta melhores soluções mesmo aumentando o número de iterações, pode ser que ele esteja muito intensificado.
+> O desafio é encontrar um equilíbrio entre intensificação e diversificação para encontrar o ótimo global.
+---
+### Metaheurísticas Populares
+Há muitas metaheurísticas diferentes, cada uma com suas próprias características e aplicações.
+- **s-Metaheuriticas**: Baseados em uma solução corrente:
+  - RMS (Random Multi Start)
+  - ILS (Iterated Local Search)
+  - VNS (Variable Neighborhood Search)
+  - GRASP (Greedy Randomized Adaptive Search Procedure)
+  - TS (Tabu Search)
+  - SA (Simulated Annealing)
+  - GLS (Guided Local Search)
+---
+- **p-Metaheurísticas**: Baseados em uma população de soluções:
+  - GA (Genetic Algorithm)
+  - PSO (Particle Swarm Optimization)
+  - ACO (Ant Colony Optimization)
+  - EDA (Estimation of Distribution Algorithm)
+
+> Nada impede de combinar diferentes metaheurísticas para resolver um problema, essa é uma abordagem comum e chamada de híbrida.
+---
+- Algumas metaheurísticas pitorescas:
+  - **Harmony Search:** Inspirada no processo de improvisação musical.
+  - **Firefly Algorithm:** Baseada no comportamento de vaga-lumes.
+  - **Cuckoo Search:** Inspirada no parasitismo de aves.
+  - **Bat Algorithm:** Baseada no comportamento de morcegos.
+  - **Flower Pollination Algorithm:** Inspirada na polinização de flores.
+---
+
+### Matheuristicas
+
+- **Matheurísticas:** Combinação de métodos exatos e heurísticos para resolver problemas de otimização.
+- **Vantagens:** Aproveitam a eficiência dos métodos exatos e a flexibilidade das heurísticas.
+- **Desvantagens:** Podem ser mais complexas de implementar e ajustar do que métodos puramente heurísticos.
+- **Exemplos:** Algoritmos híbridos que combinam programação linear inteira com busca local ou algoritmos genéticos.
+- **Aplicações:** Problemas de otimização complexos que requerem uma abordagem mista para serem resolvidos de forma eficiente.
+
 
 ## Conclusão
 
