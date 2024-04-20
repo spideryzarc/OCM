@@ -5,6 +5,7 @@ paginate: true
 ---
 
 # Metaheurísticas em Otimização Combinatória
+# <!-- fit --> Introdução e Contextualização
 
 ---
 
@@ -67,13 +68,15 @@ $$ Nota = \frac{p_1+p_2+pf}{3}$$
 
 ---
 
-<!-- _backgroundColor: black -->
-<!-- _color: white -->
-
+<!-- class: invert  -->
 "Todos os modelos são errados, mas alguns são úteis!"
 -
 
+George Box
+
+
 ---
+<!-- class:   -->
 
 ## Otimização combinatória
 
@@ -114,7 +117,7 @@ $$ Nota = \frac{p_1+p_2+pf}{3}$$
 
 ---
 
-## Por que a Resolução de Problemas deste Tipo é Considerada Difícil?
+### <!-- fit -->  Por que a Resolução de Problemas deste Tipo é Considerada Difícil?
 
 - **Combinatorialidade:** O grande espaço de busca resulta em um número exponencial de possíveis soluções.
 - **Complexidade Computacional:** Muitos problemas são NP-difíceis, o que significa que não existe algoritmo polinomial conhecido para resolvê-los de forma exata em tempo viável.
@@ -130,7 +133,7 @@ $$ Nota = \frac{p_1+p_2+pf}{3}$$
 
 ---
 
-## Conceitos Básicos
+##  Conceitos Básicos
 
 ---
 ### Representação
