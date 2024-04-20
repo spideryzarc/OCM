@@ -133,6 +133,57 @@ $$ Nota = \frac{p_1+p_2+pf}{3}$$
 ## Conceitos Básicos
 
 ---
+### Representação
+Como as soluções serão representadas.
+- **Computacinal:** Qual estrutura de dados será usada para implementar as soluções.
+  - Afeta a complexidade de memória e tempo de execução dos procedimentos.
+  - Deve ser eficiente para manipular e avaliar as soluções.
+- **Conceitual:** Como as soluções são interpretadas. Idealmente devem:
+  - Representar todas as possíveis soluções.
+  - Evitar soluções inválidas.
+  - Evitar simetrias, i.e., uma mesma solução representada de formas diferentes.
+> A representação é um aspecto crítico do projeto de uma metaheurística.
+
+---
+As metaheurísticas dependem de iterações sucessivas para encontrar a melhor solução. Se a representação for ineficiente, o resultado será um algoritmo lento e ineficaz.
+
+---
+Exemplo de representação para o problema do **Caixeiro Viajante**:
+
+- **Array de Inteiros:** 
+  - **Sequencial:** $v_i$ é a i-ésima cidade na rota [0, 4, 2, 3,1]
+    - Fácil de interpretar e manipular.
+    - Remover ou adicionar cidades é feito em $O(n)$.
+  - **Link:** $n_i$ é a proxima cidade a ser visitada após a cidade $i$ [4,0,3,1,2]
+    - Menos intuitivo, mas mais eficiente para operações de vizinhança.
+    - Remover ou adicionar cidades é feito em $O(1)$.
+---
+
+- **Matriz de Adjacência:**
+  - **Binária:** $a_{ij} = 1$ se a cidade $i$ é vizinha da cidade $j$.
+    - Desperdício de memória, complexidade $O(n^2)$.
+    - Evita simetrias, mas não é eficiente para manipulação.
+    - Mais adequado para abordagem por programação matemática.
+  
+---
+
+  Exemplo de representação para o problema de Empacotamento:
+
+- **Array de Inteiros:** $p_i$ é o pacote que contém o item $i$ [1, 2, 1, 3, 2]
+  - Fácil de interpretar e manipular.
+  - Remover ou adicionar itens é feito em $O(1)$.
+  - Apresenta muitas simetrias. Cada solução possui $m!$ representações diferentes.
+- **Lista de Listas:** $p_i$ é a lista de itens no pacote $i$ [[1,3], [2,5], [4], [6], [7,8]]
+  - Implementação mais complexa, demanda mais memória.
+  - Remover ou adicionar itens é feito em $O(n)$ dependendo da implementação.
+---
+- **Matriz de Adjacência:**
+  - **Binária:** $a_{ij} = 1$ se os items $i$ e $j$ estão no mesmo pacote.
+    - Desperdício de memória, complexidade $O(n^2)$.
+    - Evita simetrias, mas é difícil de interpretar, manipular e avaliar.
+
+
+---
 ### Espaço de Busca
 
 O que faz das metaheurísticas uma abordagem genérica é o fato de serem projetadas para resolver o **problema de busca**
@@ -201,14 +252,14 @@ A maior parte das metaheurísticas usam a busca local como um componente fundame
 
 
 
-![bg right:41% height:95%](images/hillclimb.drawio.svg)
+![bg right:32% height:95%](images/hillclimb.drawio.svg)
 
 - A solução inicial pode ser gerada por um método construtivo ou dada como entrada.
-- A `busca_local` explora a vizinhança da solução atual e retorna uma solução melhor, que pode ser a **primeira solução** melhor encontrada ou a **melhor solução** da vizinhança.
+- A `busca_local` explora a vizinhança da solução atual e, caso encontre uma solução melhor, atualiza a solução atual e retorna `True`.
 
 
 ---
-![bg right:30% height:95%](images/vnd.drawio.svg)
+![bg left:25% height:95%](images/vnd.drawio.svg)
 
 - **VND:** *Variable Neighborhood Descent*, é um método que alterna entre diferentes vizinhanças para explorar o espaço de busca.
 - O fluxograma mostra um exemplo de VND com três vizinhanças diferentes.
