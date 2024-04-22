@@ -7,6 +7,9 @@ paginate: true
 # Metaheurísticas em Otimização Combinatória
 # <!-- fit --> Introdução e Contextualização
 
+
+![bg right:58% ](images/job-seacrhing.jpg)
+
 ---
 
 ## Introdução e Contextualização
@@ -114,8 +117,17 @@ George Box
 - **Heurísticas:** Estratégias que exploram informações específicas do problema para guiar a busca por soluções.
 - **Vantagens:** Permitem lidar com problemas complexos de forma eficiente, mesmo sem garantias de otimalidade.
 - **Desvantagens:** Podem não encontrar a solução ótima, mas são úteis para problemas práticos.
+---
+
+<!-- class: invert  -->
+"Melhor **aproximadamente** agora, do que **exatamente** nunca!"
+-
+
+Desconhecido
+
 
 ---
+<!-- class:   -->
 
 ### <!-- fit -->  Por que a Resolução de Problemas deste Tipo é Considerada Difícil?
 
@@ -128,12 +140,18 @@ George Box
 ## Metaheurísticas
 
 - **Definição:** Métodos gerais e flexíveis para resolver problemas de otimização, que podem ser aplicados a uma ampla variedade de problemas.
-- **Características:** Não garantem a solução ótima, mas são capazes de encontrar soluções de boa qualidade em tempo razoável.
+- **Características:** 
+  - Não garantem a solução ótima, mas buscam soluções de boa qualidade.
+  - São estoquásticas, ou seja, usam aleatoriedade para explorar o espaço de busca.
+  - O tempo de execução é geralmente controlado por um número máximo de iterações.
+  - A qualidade da solução depende da configuração de alguns parâmetros e do número de iterações.
 
 
 ---
 
 ##  Conceitos Básicos
+
+![bg right:60% ](images/Chocolate_Hills_overview.JPG)
 
 ---
 ### Representação
@@ -149,6 +167,7 @@ Como as soluções serão representadas.
 
 ---
 As metaheurísticas dependem de iterações sucessivas para encontrar a melhor solução. Se a representação for ineficiente, o resultado será um algoritmo lento e ineficaz.
+-
 
 ---
 Exemplo de representação para o problema do **Caixeiro Viajante**:
@@ -197,10 +216,11 @@ O que faz das metaheurísticas uma abordagem genérica é o fato de serem projet
 > As metaheurísticas não são descritas em termos de um problema específico, mas sim em termos de um **espaço de busca**.
 
 ---
+
 - Em geral, usamos espaços de busca para descrever de forma metafórica o funcionamento de uma metaheurística.
   - Gráfico 2D: Espaço de busca x Qualidade da solução.
   - Gráfico mapa de calor: Espaço de busca (2D) x Função objetivo (gradiente de cor). 
-
+![bg left:50% fit](images/heatmap.png)
 ---
 ### Função Objetivo
 

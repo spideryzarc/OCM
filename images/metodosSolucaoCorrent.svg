@@ -1,0 +1,403 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   height="297mm"
+   width="210mm"
+   viewBox="0 0 744.09448819 1052.3622047"
+   id="svg2"
+   version="1.1"
+   inkscape:version="0.91 r13725"
+   sodipodi:docname="metodosSolucaoCorrent.svg">
+  <defs
+     id="defs8" />
+  <sodipodi:namedview
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1"
+     objecttolerance="10"
+     gridtolerance="10"
+     guidetolerance="10"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:window-width="1280"
+     inkscape:window-height="773"
+     id="namedview6"
+     showgrid="false"
+     inkscape:zoom="2.5371827"
+     inkscape:cx="455.08812"
+     inkscape:cy="470.68889"
+     inkscape:window-x="0"
+     inkscape:window-y="27"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg2"
+     showguides="true" />
+  <metadata
+     id="metadata4">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <rect
+     style="fill:#483e37;fill-opacity:1;stroke:none;stroke-width:1.20133901;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:3.60401705, 1.20133901;stroke-dashoffset:0;stroke-opacity:1"
+     id="rect3211"
+     width="251.74127"
+     height="395.54926"
+     x="307.90118"
+     y="278.79831" />
+  <rect
+     y="424.00998"
+     x="312.19205"
+     height="247.71439"
+     width="243.15956"
+     id="rect3365"
+     style="fill:#008080;fill-opacity:1;stroke:none;stroke-width:1;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:3, 1;stroke-dashoffset:0;stroke-opacity:1" />
+  <rect
+     style="fill:#008080;fill-opacity:1;stroke:none;stroke-width:1;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:3, 1;stroke-dashoffset:0;stroke-opacity:1"
+     id="rect3252"
+     width="240.79475"
+     height="110.36427"
+     x="313.37445"
+     y="306.00998" />
+  <rect
+     y="367.65018"
+     x="317.83365"
+     height="41.247227"
+     width="231.87634"
+     id="rect3356"
+     style="fill:#00ffff;fill-opacity:1;stroke:none;stroke-width:1;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:3, 1;stroke-dashoffset:0;stroke-opacity:1" />
+  <rect
+     style="fill:#00ffff;fill-opacity:1;stroke:none;stroke-width:1;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:3, 1;stroke-dashoffset:0;stroke-opacity:1"
+     id="rect3354"
+     width="231.87634"
+     height="41.247227"
+     x="317.83365"
+     y="325.65018" />
+  <text
+     xml:space="preserve"
+     style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:10px;line-height:125%;font-family:Sans;-inkscape-font-specification:'Sans Bold';letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     x="390.04379"
+     y="317.05963"
+     id="text3199"
+     sodipodi:linespacing="125%"><tspan
+       sodipodi:role="line"
+       id="tspan3201"
+       x="390.04379"
+       y="317.05963">Apenas descida</tspan></text>
+  <g
+     id="g3344"
+     transform="translate(1.1147842,-3.8148804)">
+    <rect
+       y="342.89166"
+       x="362.79755"
+       height="24.895563"
+       width="139.71898"
+       id="rect3203"
+       style="fill:#808000;fill-opacity:1;stroke:none;stroke-width:1.18722522;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:3.56167571, 1.18722524;stroke-dashoffset:0;stroke-opacity:1"
+       ry="5.5179272" />
+    <text
+       sodipodi:linespacing="125%"
+       id="text3207"
+       y="358.09824"
+       x="367.60577"
+       style="font-style:normal;font-weight:normal;font-size:10px;line-height:125%;font-family:Sans;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       xml:space="preserve"><tspan
+         y="358.09824"
+         x="367.60577"
+         id="tspan3209"
+         sodipodi:role="line">HIll Climbing Local Search</tspan></text>
+  </g>
+  <text
+     xml:space="preserve"
+     style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:10px;line-height:125%;font-family:Sans;-inkscape-font-specification:'Sans Bold';letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     x="333.33725"
+     y="294.30469"
+     id="text3213"
+     sodipodi:linespacing="125%"><tspan
+       sodipodi:role="line"
+       id="tspan3215"
+       x="333.33725"
+       y="294.30469">Baseados em uma solução corrente</tspan></text>
+  <g
+     id="g3349"
+     transform="translate(1.1148071,-6)">
+    <rect
+       style="fill:#808000;fill-opacity:1;stroke:none;stroke-width:1.50335276;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:4.51005873, 1.50335291;stroke-dashoffset:0;stroke-opacity:1"
+       id="rect3205"
+       width="183.43707"
+       height="24.579433"
+       x="340.93848"
+       y="387.57623"
+       ry="5.5179315" />
+    <text
+       sodipodi:linespacing="125%"
+       id="text3217"
+       y="402.62473"
+       x="344.18533"
+       style="font-style:normal;font-weight:normal;font-size:10px;line-height:125%;font-family:Sans;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       xml:space="preserve"><tspan
+         y="402.62473"
+         x="344.18533"
+         id="tspan3219"
+         sodipodi:role="line">Variable Neighborhood Descendant</tspan></text>
+  </g>
+  <text
+     xml:space="preserve"
+     style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:10px;line-height:125%;font-family:Sans;-inkscape-font-specification:'Sans Bold';letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     x="386.24985"
+     y="336.01108"
+     id="text3221"
+     sodipodi:linespacing="125%"><tspan
+       sodipodi:role="line"
+       id="tspan3223"
+       x="386.24985"
+       y="336.01108">Única vizinhança</tspan></text>
+  <text
+     sodipodi:linespacing="125%"
+     id="text3225"
+     y="377.45401"
+     x="372.77084"
+     style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:10px;line-height:125%;font-family:Sans;-inkscape-font-specification:'Sans Bold';letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     xml:space="preserve"><tspan
+       y="377.45401"
+       x="372.77084"
+       id="tspan3227"
+       sodipodi:role="line">Multiplas vizinhanças</tspan></text>
+  <text
+     xml:space="preserve"
+     style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:10px;line-height:125%;font-family:Sans;-inkscape-font-specification:'Sans Bold';letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     x="380.71274"
+     y="440.86761"
+     id="text3254"
+     sodipodi:linespacing="125%"><tspan
+       sodipodi:role="line"
+       id="tspan3256"
+       x="380.71274"
+       y="440.86761">Com diversificação</tspan></text>
+  <rect
+     style="fill:#00ffff;fill-opacity:1;stroke:none;stroke-width:1;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:3, 1;stroke-dashoffset:0;stroke-opacity:1"
+     id="rect3363"
+     width="231.87634"
+     height="41.247227"
+     x="317.83365"
+     y="451.65018" />
+  <rect
+     y="495.65018"
+     x="316.06006"
+     height="171.22754"
+     width="235.42358"
+     id="rect3367"
+     style="fill:#00ffff;fill-opacity:1;stroke:none;stroke-width:1;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:3, 1;stroke-dashoffset:0;stroke-opacity:1" />
+  <rect
+     ry="5.9120693"
+     y="509.71909"
+     x="317.30408"
+     height="47.296539"
+     width="232.93547"
+     id="rect3403"
+     style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.40000001;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:2.4, 0.4;stroke-dashoffset:0;stroke-opacity:1" />
+  <g
+     id="g3358"
+     transform="translate(1.6721725,-24)">
+    <rect
+       style="fill:#808000;fill-opacity:1;stroke:none;stroke-width:1.18722522;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:3.56167571, 1.18722524;stroke-dashoffset:0;stroke-opacity:1"
+       id="rect3274"
+       width="108.50484"
+       height="24.895563"
+       x="377.84723"
+       y="488.89166"
+       ry="5.123786" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:10px;line-height:125%;font-family:Sans;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       x="380.32962"
+       y="504.09824"
+       id="text3276"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan3278"
+         x="380.32962"
+         y="504.09824">Simulated Annealing</tspan></text>
+  </g>
+  <text
+     sodipodi:linespacing="125%"
+     id="text3280"
+     y="462.01108"
+     x="392.44858"
+     style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:10px;line-height:125%;font-family:Sans;-inkscape-font-specification:'Sans Bold';letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     xml:space="preserve"><tspan
+       y="462.01108"
+       x="392.44858"
+       id="tspan3282"
+       sodipodi:role="line">Descida Suave</tspan></text>
+  <text
+     sodipodi:linespacing="125%"
+     id="text3280-3"
+     y="506.11597"
+     x="376.65756"
+     style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:10px;line-height:125%;font-family:Sans;-inkscape-font-specification:'Sans Bold';letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+     xml:space="preserve"><tspan
+       y="506.11597"
+       x="376.65756"
+       id="tspan3282-5"
+       sodipodi:role="line">Fulga do ótimo local</tspan></text>
+  <g
+     id="g3374"
+     transform="translate(1.1147842,-8)">
+    <rect
+       y="538.99652"
+       x="317.64853"
+       height="24.895563"
+       width="230.01701"
+       id="rect3314"
+       style="fill:#ffff00;fill-opacity:1;stroke:none;stroke-width:1.18722522;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:3.56167571, 1.18722524;stroke-dashoffset:0;stroke-opacity:1"
+       ry="5.9120622" />
+    <text
+       sodipodi:linespacing="125%"
+       id="text3316"
+       y="554.20306"
+       x="320.90411"
+       style="font-style:normal;font-weight:normal;font-size:10px;line-height:125%;font-family:Sans;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       xml:space="preserve"><tspan
+         y="554.20306"
+         x="320.90411"
+         id="tspan3318"
+         sodipodi:role="line">Greed Random Adaptative Search Procedure</tspan></text>
+  </g>
+  <g
+     id="g3369"
+     transform="translate(1.1147804,-8)">
+    <rect
+       style="fill:#808000;fill-opacity:1;stroke:none;stroke-width:1.18722522;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:3.56167571, 1.18722524;stroke-dashoffset:0;stroke-opacity:1"
+       id="rect3274-6"
+       width="102.9309"
+       height="24.895563"
+       x="381.19159"
+       y="518.99652"
+       ry="4.7296553" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:10px;line-height:125%;font-family:Sans;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       x="384.29034"
+       y="535.1723"
+       id="text3276-7"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan3278-5"
+         x="384.29034"
+         y="535.1723">Random Multi-start</tspan></text>
+  </g>
+  <g
+     id="g3384"
+     transform="translate(0.55740356,-2)">
+    <rect
+       style="fill:#ffff00;fill-opacity:1;stroke:none;stroke-width:1.18722522;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:3.56167571, 1.18722524;stroke-dashoffset:0;stroke-opacity:1"
+       id="rect3326"
+       width="155.32605"
+       height="24.895563"
+       x="355.55139"
+       y="586.99652"
+       ry="5.9120693" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:10px;line-height:125%;font-family:Sans;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       x="357.7652"
+       y="602.20306"
+       id="text3328"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan3330"
+         x="357.7652"
+         y="602.20306">Variable Neighborhood Search</tspan></text>
+  </g>
+  <g
+     id="g3379"
+     transform="translate(-0.55739212,-4)">
+    <rect
+       y="566.99652"
+       x="378.4046"
+       height="24.895563"
+       width="111.84922"
+       id="rect3320"
+       style="fill:#808000;fill-opacity:1;stroke:none;stroke-width:1.18722522;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:3.56167571, 1.18722524;stroke-dashoffset:0;stroke-opacity:1"
+       ry="5.5179315" />
+    <text
+       sodipodi:linespacing="125%"
+       id="text3322"
+       y="583.1723"
+       x="381.07483"
+       style="font-style:normal;font-weight:normal;font-size:10px;line-height:125%;font-family:Sans;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       xml:space="preserve"><tspan
+         y="583.1723"
+         x="381.07483"
+         id="tspan3324"
+         sodipodi:role="line">Iterated Local Search</tspan></text>
+  </g>
+  <g
+     id="g3389"
+     transform="translate(0.55737686,-2)">
+    <rect
+       y="612.99652"
+       x="400.14304"
+       height="24.895563"
+       width="66.142815"
+       id="rect3332"
+       style="fill:#ffff00;fill-opacity:1;stroke:none;stroke-width:1.18722522;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:3.56167571, 1.18722524;stroke-dashoffset:0;stroke-opacity:1"
+       ry="5.5179315" />
+    <text
+       sodipodi:linespacing="125%"
+       id="text3334"
+       y="627.95264"
+       x="403.2291"
+       style="font-style:normal;font-weight:normal;font-size:10px;line-height:125%;font-family:Sans;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       xml:space="preserve"><tspan
+         y="627.95264"
+         x="403.2291"
+         id="tspan3336"
+         sodipodi:role="line">Tabu Search</tspan></text>
+  </g>
+  <g
+     id="g3394"
+     transform="translate(-0.27871704,-4)">
+    <rect
+       style="fill:#ffff00;fill-opacity:1;stroke:none;stroke-width:1.18722522;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:3.56167571, 1.18722524;stroke-dashoffset:0;stroke-opacity:1"
+       id="rect3338"
+       width="104.60309"
+       height="24.895563"
+       x="381.74899"
+       y="640.99652"
+       ry="5.5179315" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:10px;line-height:125%;font-family:Sans;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       x="382.99829"
+       y="655.95264"
+       id="text3340"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan3342"
+         x="382.99829"
+         y="655.95264">Guided Local Search</tspan></text>
+  </g>
+  <rect
+     style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.40000001;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:2.4, 0.4;stroke-dashoffset:0;stroke-opacity:1"
+     id="rect3405"
+     width="232.93549"
+     height="102.47582"
+     x="317.30408"
+     y="561.71912"
+     ry="7.4886212" />
+</svg>
