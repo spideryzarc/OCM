@@ -1,23 +1,37 @@
 ---
 marp: true
-theme: default
+theme: gaia 
 paginate: true
+class: lead
+footer: "Metaheurísticas - Albert E.F. Muritiba - 2024"
+backgroundImage: url('https://marp.app/assets/hero-background.svg')
+style: |
+  .small{
+    font-size: 0.75rem;
+  }
 ---
 
-# Metaheurísticas em Otimização Combinatória
-# <!-- fit --> Introdução e Contextualização
+# <!-- fit --> Metaheurísticas 
+
+Introdução e Conceitos Básicos
+
+<p class ='small'>Albert E.F. Muritiba</p>
 
 
-![bg right:58% ](images/job-seacrhing.jpg)
+
+
+![bg right:45%  ](images/job-seacrhing.jpg)
 
 ---
 
 ## Introdução e Contextualização
 
-- **Propósito:** Explorar técnicas avançadas para resolver problemas de otimização complexos.
+- **Propósito:** Definir e contextualizar o campo de metaheurísticas e sua aplicação em problemas de otimização combinatória.
+
+
 - **Relevância:** Problemas de otimização combinatória são comuns em diversos campos, como logística, engenharia e computação.
-- **Abordagem:** Utilização de métodos aproximados e heurísticos para encontrar soluções próximas do ótimo em tempo razoável.
-- **Desafios:** A natureza combinatória desses problemas os torna difíceis de resolver de forma exata em tempo viável.
+
+- **Abordagem:** Expor os conceitos básicos e características das metaheurísticas, bem como sua aplicação em problemas práticos.
 
 ---
 
@@ -34,19 +48,20 @@ paginate: true
 - **Provas Escritas:** Duas avaliações escritas ao longo do semestre. 
 - **Projeto Final:** Resolução de um problema de otimização combinatória utilizando metaheurísticas. 
 
-$$ Nota = \frac{p_1+p_2+pf}{3}$$
+$$Nota = \frac{p_1+p_2+pf}{3}$$
 
 ---
 
 ### Linguagem de Programação
 
-- Os exemplos e projetos serão desenvolvidos em **Python**. Embora não seja a linguagem adequada, é de fácil entendimento e rápida prototipação.
+- Os exemplos serão desenvolvidos em **Python**. 
+- Embora **não seja a linguagem adequada**, Python é de fácil entendimento e rápida prototipação.
 - O projeto final pode ser desenvolvido em qualquer linguagem de programação "não obscura".
 - Tentaremos atingir o máximo de performance possível, mas sem otimizações extremas.
 
 ---
 
-## Por que Problemas de Otimização Combinatória são Relevantes?
+## Relevância dos Problemas de Otimização Combinatória
 
 - **Aplicações Práticas:** Exemplos incluem roteamento de veículos, escalonamento de produção e design de redes.
 - **Complexidade:** O grande número de possíveis soluções torna a busca pelo ótimo uma tarefa árdua.
@@ -54,12 +69,51 @@ $$ Nota = \frac{p_1+p_2+pf}{3}$$
 
 ---
 
-## Exemplos de Problemas de Otimização Combinatória
+## Exemplos
 
-- **Caixeiro Viajante (TSP):** Encontrar o caminho mais curto que visita todas as cidades exatamente uma vez e retorna à cidade de origem.
-- **Problema da Mochila (KP):** Determinar quais itens selecionar para maximizar o valor total, considerando uma capacidade máxima de carga.
-- **Escalonamento de Produção:** Decidir a sequência de produção de diferentes itens para minimizar os custos ou maximizar a eficiência.
-- **Roteamento de Veículos (VRP):** Designar rotas para veículos de forma a atender a demanda de vários clientes, minimizando os custos totais.
+- **Caixeiro Viajante (TSP)** 
+- **Roteamento de Veículos (VRP)** 
+- **Escalonamento de Produção** 
+- **Problema de Corte ou Empacotamento**
+
+---
+### Caixeiro Viajante (TSP)
+
+*Traveling Salesman Problem*.
+- Dado um conjunto de cidades e as distâncias entre elas, encontrar o **menor ciclo que visita cada cidade**.
+- Problema clássico de otimização combinatória, com aplicações em logística, transporte e telecomunicações.
+  
+![bg right:30% 90%](images/TSP.drawio.svg)
+
+---
+### Roteamento de Veículos (VRP)
+
+*Vehicle Routing Problem*.
+- Dado um conjunto de clientes, suas demandas e um conjunto de veículos, encontrar **rotas para os veículos que atendam a todos os clientes**.
+- Problema comum em logística, distribuição e transporte.
+- Variantes incluem VRP com janelas de tempo, VRP com capacidade limitada, etc.
+
+![bg right:30% 90%](images/VRP.drawio.svg)
+
+---
+### Escalonamento de Produção
+
+*Job Scheduling Problem*.
+- Dado um conjunto de tarefas, cada uma com um tempo de processamento e uma máquina, encontrar **uma sequência de execução que minimize o tempo total de processamento**.
+- Problema comum em manufatura, produção e agendamento de tarefas.
+- Variantes incluem JSP com restrições de precedência, JSP com restrições de recursos, etc.
+
+![bg right:30% 90%](images/JSP.drawio.svg)
+
+---
+
+### Problema de Corte ou Empacotamento
+
+*Bin Packing Problem*.
+- Dado um conjunto de itens e seus *tamanhos*, encontrar **a menor quantidade de pacotes que acomode todos os itens**.
+- Problema comum em logística, transporte, corte e armazenamento.
+
+![bg right:30% 90%](images/BPP.drawio.svg)
 
 ---
 
@@ -70,16 +124,15 @@ $$ Nota = \frac{p_1+p_2+pf}{3}$$
 - Um modelo útil deve ser simples o bastante para ser resolvido, e preciso o suficiente para que seu resultado possa ser aplicado.
 
 ---
+<!-- _class: invert  -->
+<!-- _backgroundImage: false) -->
 
-<!-- class: invert  -->
 "Todos os modelos são errados, mas alguns são úteis!"
--
-
+--
 George Box
 
 
 ---
-<!-- class:   -->
 
 ## Otimização combinatória
 
@@ -119,7 +172,7 @@ George Box
 - **Desvantagens:** Podem não encontrar a solução ótima, mas são úteis para problemas práticos.
 ---
 
-<!-- class: invert  -->
+<!-- _class: invert  -->
 "Melhor **aproximadamente** agora, do que **exatamente** nunca!"
 -
 
@@ -127,7 +180,6 @@ Desconhecido
 
 
 ---
-<!-- class:   -->
 
 ### <!-- fit -->  Por que a Resolução de Problemas deste Tipo é Considerada Difícil?
 
