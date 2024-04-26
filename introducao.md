@@ -1,6 +1,6 @@
 ---
 marp: true
-theme: gaia 
+theme: default 
 paginate: true
 class: lead
 footer: "Metaheurísticas - Albert E.F. Muritiba - 2024"
@@ -73,8 +73,8 @@ $$Nota = \frac{p_1+p_2+pf}{3}$$
 
 - **Caixeiro Viajante (TSP)** 
 - **Roteamento de Veículos (VRP)** 
-- **Escalonamento de Produção** 
-- **Problema de Corte ou Empacotamento**
+- **Problema de Corte ou Empacotamento (BPP)**
+- **Coloração de Grafos (GCP)**
 
 ---
 ### Caixeiro Viajante (TSP)
@@ -96,16 +96,7 @@ $$Nota = \frac{p_1+p_2+pf}{3}$$
 ![bg right:30% 90%](images/VRP.drawio.svg)
 
 ---
-### Escalonamento de Produção
 
-*Job Scheduling Problem*.
-- Dado um conjunto de tarefas, cada uma com um tempo de processamento e uma máquina, encontrar **uma sequência de execução que minimize o tempo total de processamento**.
-- Problema comum em manufatura, produção e agendamento de tarefas.
-- Variantes incluem JSP com restrições de precedência, JSP com restrições de recursos, etc.
-
-![bg right:30% 90%](images/JSP.drawio.svg)
-
----
 
 ### Problema de Corte ou Empacotamento
 
@@ -116,6 +107,17 @@ $$Nota = \frac{p_1+p_2+pf}{3}$$
 ![bg right:30% 90%](images/BPP.drawio.svg)
 
 ---
+
+### Coloração de Grafos
+
+*Graph Coloring Problem*.
+- Dado um grafo, encontrar **a menor quantidade de cores necessárias para colorir os vértices de forma que vértices adjacentes tenham cores diferentes**.
+- Problema comum em alocação de recursos, escalonamento e design de redes.
+
+![bg right:30% 90%](images/GCP.drawio.svg)
+
+---
+
 
 ## Modelagem
 
@@ -334,7 +336,7 @@ A maior parte das metaheurísticas usam a busca local como um componente fundame
 
 
 ---
-![bg left:25% height:95%](images/vnd.drawio.svg)
+![bg left:25% height:95%](images/VND.drawio.svg)
 
 - **VND:** *Variable Neighborhood Descent*, é um método que alterna entre diferentes vizinhanças para explorar o espaço de busca.
 - O fluxograma mostra um exemplo de VND com três vizinhanças diferentes.
