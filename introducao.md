@@ -60,6 +60,12 @@ $$Nota = \frac{p_1+p_2+pf}{3}$$
 - Tentaremos atingir o máximo de performance possível, mas sem otimizações extremas.
 
 ---
+## Otimização combinatória
+
+- Um problema combinatório é aquele cuja solução pode ser representada na forma de uma sequência de decisões discretas. 
+- **Otimização Combinatória:** Ramo da matemática que lida com a busca da melhor solução para um problema combinatório.
+
+---
 
 ## Relevância dos Problemas de Otimização Combinatória
 
@@ -129,31 +135,21 @@ $$Nota = \frac{p_1+p_2+pf}{3}$$
 <!-- _class: invert  -->
 <!-- _backgroundImage: false) -->
 
-"Todos os modelos são errados, mas alguns são úteis!"
+"Todos os modelos são errados, mas alguns são **úteis**!"
 --
 George Box
 
 
 ---
 
-## Otimização combinatória
 
-- Um problema combinatório é aquele cuja solução pode ser representada na forma de uma sequência de decisões discretas. 
-- Exemplos:
-    - Caminho mínimo.
-    - Árvore geradora mínima.
-    - Localização de facilidades.
-    - Roteirização de veículos.
-    - Escala de horários. 
-
----
 
 ## Abordagens para Resolver Problemas de Otimização Combinatória
 
 - **Métodos Exatos:** Algoritmos que garantem a solução ótima, mas podem ser inviáveis para problemas grandes.
 - **Métodos Aproximados:** Estratégias que buscam soluções de boa qualidade, mas não necessariamente ótimas.
-- **Heurísticas:** Técnicas que exploram informações específicas do problema para guiar a busca por soluções.
-- **Metaheurísticas:** Estratégias gerais e flexíveis que podem ser aplicadas a uma ampla variedade de problemas.
+- **Heurísticas:** Técnicas que exploram **informações específicas do problema** para guiar a busca por soluções.
+- **Metaheurísticas:** Estratégias **gerais e flexíveis** que podem ser aplicadas a uma ampla variedade de problemas.
   
 ---
 
@@ -161,20 +157,24 @@ George Box
 
 - **Enumeração Exaustiva:** Avalia todas as possíveis soluções para encontrar a melhor.
 - **Programação Dinâmica:** Explora a estrutura recursiva do problema para evitar recálculos redundantes.
-- **Programação Linear Inteira:** Formula o problema como um modelo de programação linear com variáveis inteiras, para posterior resolução usando algoritmos específicos, e.g Branch and Bound, Branch and Cut, etc.
-- **Vantagens:** Garantem a solução ótima, quando encontrada.
-- **Desvantagens:** Podem ser inviáveis para problemas grandes devido à complexidade computacional.
+- **Programação Linear Inteira:** Formula o problema como um modelo de programação linear com variáveis inteiras, para posterior resolução usando algoritmos especializados, e.g *Branch and Bound*, *Branch and Cut*, etc.
+> **Vantagens:** Garantem a solução ótima, quando encontrada.
+
+>**Desvantagens:** Podem ser inviáveis para problemas grandes devido à complexidade computacional.
 ---
 
 ## Métodos Aproximados e Heurísticos
 
 - **Métodos Aproximados:** Buscam soluções de boa qualidade, mas não necessariamente ótimas, em tempo razoável.
 - **Heurísticas:** Estratégias que exploram informações específicas do problema para guiar a busca por soluções.
-- **Vantagens:** Permitem lidar com problemas complexos de forma eficiente, mesmo sem garantias de otimalidade.
-- **Desvantagens:** Podem não encontrar a solução ótima, mas são úteis para problemas práticos.
+>**Vantagens:** Permitem lidar com problemas complexos de forma eficiente, mesmo sem garantias de otimalidade.
+
+>**Desvantagens:** Podem não encontrar a solução ótima, mas são úteis para problemas práticos.
+
 ---
 
 <!-- _class: invert  -->
+<!-- _backgroundImage: false) -->
 "Melhor **aproximadamente** agora, do que **exatamente** nunca!"
 -
 
@@ -183,33 +183,35 @@ Desconhecido
 
 ---
 
-### <!-- fit -->  Por que a Resolução de Problemas deste Tipo é Considerada Difícil?
+##  Desafios
 
-- **Combinatorialidade:** O grande espaço de busca resulta em um número exponencial de possíveis soluções.
-- **Complexidade Computacional:** Muitos problemas são NP-difíceis, o que significa que não existe algoritmo polinomial conhecido para resolvê-los de forma exata em tempo viável.
-- **Necessidade de Metaheurísticas:** Estratégias inteligentes são necessárias para encontrar soluções de boa qualidade em um tempo aceitável.
+- **Combinatorialidade:** Número exponencial de possíveis soluções. Analisar todas as possibilidades de um TSP com 20 cidades levaria **77 anos**, avaliando  **1 bilhão** de soluções por segundo.
+- **Complexidade Computacional:** Muitos problemas são NP-difíceis, o que significa que **não existe algoritmo  conhecido** para resolvê-los de forma exata sem que o tempo de execução **cresça exponencialmente** com o tamanho da entrada.
+- **Restrições:** Problemas reais frequentemente possuem restrições adicionais, como capacidade, janelas de tempo, conflitos, etc.
 
 ---
 
 ## Metaheurísticas
 
-- **Definição:** Métodos gerais e flexíveis para resolver problemas de otimização, que podem ser aplicados a uma ampla variedade de problemas.
+- **Definição:** Estratégias genéricas e flexíveis para resolver problemas de otimização.
 - **Características:** 
-  - Não garantem a solução ótima, mas buscam soluções de boa qualidade.
-  - São estoquásticas, ou seja, usam aleatoriedade para explorar o espaço de busca.
-  - O tempo de execução é geralmente controlado por um número máximo de iterações.
-  - A qualidade da solução depende da configuração de alguns parâmetros e do número de iterações.
+  - Não garantem a solução ótima,
+  - são estoquásticas, i.e., usam aleatoriedade,
+  - o seu tempo de execução é controlável,
+  - a qualidade da solução depende da configuração, *tunning*, de alguns parâmetros e do número de iterações.
 
 
 ---
 
 ##  Conceitos Básicos
 
+A seguir, apresentamos alguns conceitos fundamentais para o projeto e implementação de metaheurísticas.
+
 ![bg right:60% ](images/Chocolate_Hills_overview.JPG)
 
 ---
 ### Representação
-Como as soluções serão representadas.
+Como as soluções serão representadas. Aspetos a considerar:
 - **Computacinal:** Qual estrutura de dados será usada para implementar as soluções.
   - Afeta a complexidade de memória e tempo de execução dos procedimentos.
   - Deve ser eficiente para manipular e avaliar as soluções.
@@ -217,13 +219,22 @@ Como as soluções serão representadas.
   - Representar todas as possíveis soluções.
   - Evitar soluções inválidas.
   - Evitar simetrias, i.e., uma mesma solução representada de formas diferentes.
-> A representação é um aspecto crítico do projeto de uma metaheurística.
 
 ---
 As metaheurísticas dependem de iterações sucessivas para encontrar a melhor solução. Se a representação for ineficiente, o resultado será um algoritmo lento e ineficaz.
 -
 
+> Reavaliar a representação é uma etapa importante para melhorar o desempenho de uma metaheurística.
 ---
+<!-- _class: invert  -->
+<!-- _backgroundImage: false) -->
+
+"A otimização prematura é a raiz de todo mal!"
+--
+Donald Knuth
+
+---
+
 Exemplo de representação para o problema do **Caixeiro Viajante**:
 
 - **Array de Inteiros:** 
@@ -233,6 +244,9 @@ Exemplo de representação para o problema do **Caixeiro Viajante**:
   - **Link:** $n_i$ é a proxima cidade a ser visitada após a cidade $i$ [4,0,3,1,2]
     - Menos intuitivo, mas mais eficiente para operações de vizinhança.
     - Remover ou adicionar cidades é feito em $O(1)$.
+
+![bg right:30% 90%](images/TSP.drawio.svg)
+
 ---
 
 - **Matriz de Adjacência:**
@@ -240,7 +254,9 @@ Exemplo de representação para o problema do **Caixeiro Viajante**:
     - Desperdício de memória, complexidade $O(n^2)$.
     - Evita simetrias, mas não é eficiente para manipulação.
     - Mais adequado para abordagem por programação matemática.
-  
+
+![bg right:30% 90%](images/TSP.drawio.svg)  
+
 ---
 
   Exemplo de representação para o problema de Empacotamento:
@@ -252,11 +268,17 @@ Exemplo de representação para o problema do **Caixeiro Viajante**:
 - **Lista de Listas:** $p_i$ é a lista de itens no pacote $i$ [[1,3], [2,5], [4], [6], [7,8]]
   - Implementação mais complexa, demanda mais memória.
   - Remover ou adicionar itens é feito em $O(n)$ dependendo da implementação.
+
+![bg right:25% 90%](images/BPP.drawio.svg)
+
 ---
 - **Matriz de Adjacência:**
   - **Binária:** $a_{ij} = 1$ se os items $i$ e $j$ estão no mesmo pacote.
     - Desperdício de memória, complexidade $O(n^2)$.
     - Evita simetrias, mas é difícil de interpretar, manipular e avaliar.
+
+![bg right:25% 90%](images/BPP.drawio.svg)
+
 
 
 ---
@@ -269,12 +291,14 @@ O que faz das metaheurísticas uma abordagem genérica é o fato de serem projet
 
 > As metaheurísticas não são descritas em termos de um problema específico, mas sim em termos de um **espaço de busca**.
 
----
 
-- Em geral, usamos espaços de busca para descrever de forma metafórica o funcionamento de uma metaheurística.
-  - Gráfico 2D: Espaço de busca x Qualidade da solução.
-  - Gráfico mapa de calor: Espaço de busca (2D) x Função objetivo (gradiente de cor). 
-![bg left:50% fit](images/heatmap.png)
+![bg left:30%](images/Radar.jpg)
+
+---
+Em geral, usamos espaços de busca para descrever de forma metafórica o funcionamento de uma metaheurística.
+- Gráfico 2D: Espaço de busca x Qualidade da solução.
+- Gráfico mapa de calor: Espaço de busca (2D) x Função objetivo (gradiente de cor). 
+![bg left:55% ](images/heatmap.png)
 ---
 ### Função Objetivo
 
@@ -282,18 +306,37 @@ O que faz das metaheurísticas uma abordagem genérica é o fato de serem projet
 - **Função de Avaliação:** Certas abordagens de otimização, adaptam a função objetivo para uma função de avaliação, que é uma função que não necessariamente representa a qualidade da solução, mas sim a adequação da solução para a metaheurística.
 
 ---
+Um bom exemplo é o da função objetivo para o BPP:
+- **Função Objetivo:** Minimizar o número de pacotes usados. Pequenas modificações na solução quase nunca resultam em uma solução melhor.
+- **Função de Avaliação 1:** Maximizar a soma dos quadrados das cargas dos pacotes. Assim, soluções com pacotes mais próximos de serem completados ou esvaziados são mais bem avaliadas.
+- **Função de Avaliação 2:** Algumas abordagens permitem soluções inviáveis, e a função de avaliação é usada para penalizar soluções inviáveis.
+---
+
 ### Vizinhança
 
-A vizinhança é uma noção fundamental em muitas metaheurísticas, como busca local e algoritmos genéticos.
+Conjunto de soluções que são "próximas" de uma solução dada.
+- Um vizinho é obtido a partir de uma solução atual por meio de uma "pequena" modificação.
+- A vizinhança de uma solução é uma escolha **arbitrária** por parte do projetista da metaheurística.
+- Definir uma boa vizinhança é crucial para o desempenho da metaheurística.  
 
-- **Vizinhança:** Conjunto de soluções que são "próximas" de uma solução dada.
-- Geralmente, um vizinho é obtido a partir de uma solução atual por meio de uma pequena modificação.
+![bg right:40%](images/tilt-shift-neighborhood.jpg)
 
+---
+### Operadores de Vizinhança
+São rotinas que **definem como gerar vizinhos** a partir de uma solução atual. Exemplos para o **TSP**:
+- **Swap:** Troca a ordem de duas cidades na rota.
+  - [0, 1, **2**, 3, **4**] -> [0, 1, **4**, 3, **2**]
+- **2-Opt:** Inverte a ordem de um subconjunto de cidades na rota.
+  - [0, 1, **2, 3, 4**] -> [0, 1, **4, 3, 2**]
+- **Insertion:** Remove uma cidade da rota e a insere em outra posição.
+  - [0, 1, **2**, 3, 4] -> [0, 1, 3, 4, **2**]
+- **Or-Opt:** Remove um subconjunto de cidades da rota e as insere em outra posição.
+  - [0, 1, **2, 3**, 4] -> [0, 1, 4, **2, 3**]
 
 ---
 ### Princípio da Localidade
 
-- **Princípio da Localidade:** A ideia de que soluções de alta qualidade tendem a estar próximas umas das outras no espaço de busca.
+A ideia de que soluções de alta qualidade tendem a estar próximas umas das outras no espaço de busca.
 - Pequenas modificações em uma solução de alta qualidade devem resultar em soluções de qualidade semelhante.
 - Se a função objetivo for muito sensível ou nada sensível a pequenas modificações, as metaheurísticas podem não ser eficazes.
 - Nestes casos podemos usar um função de avaliação ou trocar a natureza das modificações.
