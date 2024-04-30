@@ -379,6 +379,7 @@ A maior parte das metaheurísticas usam a busca local como um componente fundame
 
 
 ---
+
 ![bg left:25% height:95%](images/VND.drawio.svg)
 
 - **VND:** *Variable Neighborhood Descent*, é um método que alterna entre diferentes vizinhanças para explorar o espaço de busca.
@@ -387,6 +388,7 @@ A maior parte das metaheurísticas usam a busca local como um componente fundame
 
 ---
 ### Intensificação vs Diversificação
+<!-- _footer: ' ' -->
 Um conceito que lidamos no projeto de metaheurísticas é a **intensificação** vs **diversificação**.
 
 - **Intensificação:** Concentrar a busca em torno de regiões promissoras do espaço de busca.
