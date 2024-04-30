@@ -104,7 +104,7 @@ $$Nota = \frac{p_1+p_2+pf}{3}$$
 - Dado um conjunto de itens e seus *tamanhos*, encontrar **a menor quantidade de pacotes que acomode todos os itens**.
 - Problema comum em logística, transporte, corte e armazenamento.
 
-![bg right:30% 90%](images/BPP.drawio.svg)
+![bg right:30% 80%](images/BPP.drawio.svg)
 
 ---
 
