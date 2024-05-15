@@ -250,7 +250,15 @@ Exemplo de representação para o problema do **Caixeiro Viajante**:
 ![bg right:29% 98%](images/TSP.drawio.svg)
 
 ---
+- **Lista de scores:** $v_i$ é um valor que representa a prioridade de visitar a cidade $i$.
+  - `[0, 15, 2.5, 1, 3, 3, 0.5]`
+  - Uma solução é obtida ordenando os índices de acordo com os scores.
+  - Muito flexível, mas difícil de interpretar e manipular.
+  - Muitas simetrias, várias soluções podem ter o mesmo score.
+  - Adequada para abordagens baseadas em população.
 
+
+---
 - **Matriz de Adjacência:**
   $$ \scriptsize
   A = \begin{bmatrix}
@@ -263,7 +271,7 @@ Exemplo de representação para o problema do **Caixeiro Viajante**:
   0 & 1 & 0 & 0 & 0 & 1 & 0
   \end{bmatrix}
   $$
-  - **Binária:** $a_{ij} = 1$ se a cidade $i$ é vizinha da cidade $j$.
+  - **Binária:** $a_{ij} = 1$ se o arco $(i,j)$ está na rota.
     - Desperdício de memória, $O(n^2)$.
     - Evita simetrias, mas não é eficiente para manipulação.
     - Adequada para abordagem por programação matemática.
