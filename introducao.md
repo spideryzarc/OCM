@@ -35,7 +35,7 @@ Introdução e Conceitos Básicos
 
 ---
 
-### Bibliografia
+## Bibliografia
 
 - Glover, Fred W., and Gary A. Kochenberger, eds. **Handbook of metaheuristics**. Vol. 57. Springer Science & Business Media, 2006.
 - Talbi, El-Ghazali. **Metaheuristics: from design to implementation**. Vol. 74. John Wiley & Sons, 2009.
@@ -43,7 +43,7 @@ Introdução e Conceitos Básicos
 
 ---
 
-### Avaliação
+## Avaliação
 
 - **Provas Escritas:** Duas avaliações escritas ao longo do semestre. 
 - **Projeto Final:** Resolução de um problema de otimização combinatória utilizando metaheurísticas. 
@@ -52,7 +52,7 @@ $$Nota = \frac{p_1+p_2+pf}{3}$$
 
 ---
 
-### Linguagem de Programação
+## Linguagem de Programação
 
 - Os exemplos serão desenvolvidos em **Python**. 
 - Embora **não seja a linguagem adequada**, Python é de fácil entendimento e rápida prototipação.
@@ -129,7 +129,7 @@ $$Nota = \frac{p_1+p_2+pf}{3}$$
 
 - O primeiro passo para resolver computacionalmente um problema real é sua modelagem.
 - Um modelo nunca será igual ao problema original, sempre haverão simplificações.
-- Um modelo útil deve ser simples o bastante para ser resolvido, e preciso o suficiente para que seu resultado possa ser aplicado.
+- Um modelo útil deve ser **simples o bastante para ser resolvido**, e **preciso o suficiente para que seu resultado possa ser aplicado**.
 
 ---
 <!-- _class: invert  -->
@@ -193,10 +193,10 @@ Desconhecido
 
 ## Metaheurísticas
 
-- **Definição:** Estratégias genéricas e flexíveis para resolver problemas de otimização.
+- **Definição:** Estratégias **genéricas e flexíveis** para resolver problemas de otimização.
 - **Características:** 
   - Não garantem a solução ótima,
-  - são estoquásticas, i.e., usam aleatoriedade,
+  - são estocásticas, i.e., usam aleatoriedade,
   - o seu tempo de execução é controlável,
   - a qualidade da solução depende da configuração, *tunning*, de alguns parâmetros e do número de iterações.
 
@@ -211,11 +211,11 @@ A seguir, apresentamos alguns conceitos fundamentais para o projeto e implementa
 
 ---
 ### Representação
-Como as soluções serão representadas. Aspetos a considerar:
-- **Computacinal:** Qual estrutura de dados será usada para implementar as soluções.
+Como as soluções serão representadas no modelo computacional. Devemos considerar dois aspectos:
+- **Computacional:** Qual estrutura de dados será usada para implementar as soluções.
   - Afeta a complexidade de memória e tempo de execução dos procedimentos.
   - Deve ser eficiente para manipular e avaliar as soluções.
-- **Conceitual:** Como as soluções são interpretadas. Idealmente devem:
+- **Conceitual:** Como as soluções são interpretadas. **Idealmente** devem:
   - Representar todas as possíveis soluções.
   - Evitar soluções inválidas.
   - Evitar simetrias, i.e., uma mesma solução representada de formas diferentes.
@@ -237,25 +237,38 @@ Donald Knuth
 
 Exemplo de representação para o problema do **Caixeiro Viajante**:
 
-- **Array de Inteiros:** 
-  - **Sequencial:** $v_i$ é a i-ésima cidade na rota [0, 4, 2, 3,1]
+- **Array de Inteiros:**  $V = [v_1,v_2,\ldots,v_n]$ 
+  - **Sequencial:** $v_i$ é a i-ésima cidade na rota 
+    - `[0, 4, 2, 3, 1, 6, 5]`
     - Fácil de interpretar e manipular.
-    - Remover ou adicionar cidades é feito em $O(n)$.
-  - **Link:** $n_i$ é a proxima cidade a ser visitada após a cidade $i$ [4,0,3,1,2]
-    - Menos intuitivo, mas mais eficiente para operações de vizinhança.
-    - Remover ou adicionar cidades é feito em $O(1)$.
+    - Remover/adicionar cidades é feito em $O(n)$.
+  - **Link:** $v_i$ é a proxima cidade após a cidade $i$ 
+    - `[4, 6, 3, 1, 2, 0, 5]`
+    - Menos intuitivo, mais difícil de implementar.
+    - Remover/adicionar cidades é feito em $O(1)$.
 
-![bg right:30% 90%](images/TSP.drawio.svg)
+![bg right:29% 98%](images/TSP.drawio.svg)
 
 ---
 
 - **Matriz de Adjacência:**
+  $$ \scriptsize
+  A = \begin{bmatrix}
+  0 & 0 & 0 & 0 & 1 & 1 & 0\\
+  0 & 0 & 1 & 0 & 0 & 0 & 1\\
+  0 & 0 & 0 & 1 & 1 & 0 & 0\\
+  0 & 1 & 1 & 0 & 0 & 0 & 0\\
+  1 & 0 & 1 & 0 & 0 & 0 & 0\\
+  1 & 0 & 0 & 0 & 0 & 0 & 1\\
+  0 & 1 & 0 & 0 & 0 & 1 & 0
+  \end{bmatrix}
+  $$
   - **Binária:** $a_{ij} = 1$ se a cidade $i$ é vizinha da cidade $j$.
-    - Desperdício de memória, complexidade $O(n^2)$.
+    - Desperdício de memória, $O(n^2)$.
     - Evita simetrias, mas não é eficiente para manipulação.
-    - Mais adequado para abordagem por programação matemática.
+    - Adequada para abordagem por programação matemática.
 
-![bg right:30% 90%](images/TSP.drawio.svg)  
+![bg right:29% 98%](images/TSP.drawio.svg)  
 
 ---
 
@@ -357,7 +370,7 @@ As metaheurísticas precisam de um ponto de partida para iniciar a busca.
 - **Definição:** Abordagem que constrói uma solução passo a passo, adicionando elementos de acordo com um critério específico.
 - Na maioria das vezes, criar uma solução viável não é complicado,
 - Em certos casos, criar umas solução viável pode ser um problema em si. Neste casos podemos admitir soluções inviáveis e corrigi-las posteriormente.
-- Comumente temos métdos construtivos:
+- Comumente temos métodos construtivos:
   - Totalmente aleatórios.
   - Gulosos,
   - Guloso Randomizado.  
@@ -400,7 +413,7 @@ Um conceito que lidamos no projeto de metaheurísticas é a **intensificação**
 ---
 ### Metaheurísticas Populares
 Há muitas metaheurísticas diferentes, cada uma com suas próprias características e aplicações.
-- **s-Metaheuriticas**: Baseados em uma solução corrente:
+- **s-Metaheurísticas**: Baseados em uma solução corrente:
   - RMS (Random Multi Start)
   - ILS (Iterated Local Search)
   - VNS (Variable Neighborhood Search)
@@ -420,7 +433,7 @@ Há muitas metaheurísticas diferentes, cada uma com suas próprias característ
 
 ### Matheuristicas
 
-- **Matheurísticas:** Combinação de métodos exatos e heurísticos para resolver problemas de otimização.
+- **Mate-heurísticas:** Combinação de métodos exatos e heurísticos para resolver problemas de otimização.
 - **Vantagens:** Aproveitam a eficiência dos métodos exatos e a flexibilidade das heurísticas.
 - **Desvantagens:** Podem ser mais complexas de implementar e ajustar do que métodos puramente heurísticos.
 - **Exemplos:** Algoritmos híbridos que combinam programação linear inteira com busca local ou algoritmos genéticos.
