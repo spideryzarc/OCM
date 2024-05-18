@@ -251,17 +251,17 @@ Exemplo de representação para o problema do **Caixeiro Viajante**:
 
 ---
 - **Lista de scores:** $v_i$ é um valor que representa a prioridade de visitar a cidade $i$.
-  - `[0, 15, 2.5, 1, 3, 3, 0.5]`
+  - `[0, 8, 2.5, 5.7, 3, 17, 10]`
   - Uma solução é obtida ordenando os índices de acordo com os scores.
   - Muito flexível, mas difícil de interpretar e manipular.
-  - Muitas simetrias, várias soluções podem ter o mesmo score.
+  - Muitas simetrias, uma **infinidade** de scores podem representar a mesma solução.
   - Adequada para abordagens baseadas em população.
-
+  - Representações desse tipo precisam de um método construtivo para **decodificar** a solução.
 
 ---
 - **Matriz de Adjacência:**
   $$ \scriptsize
-  A = \begin{bmatrix}
+  X = \begin{bmatrix}
   0 & 0 & 0 & 0 & 1 & 1 & 0\\
   0 & 0 & 1 & 0 & 0 & 0 & 1\\
   0 & 0 & 0 & 1 & 1 & 0 & 0\\
@@ -271,7 +271,7 @@ Exemplo de representação para o problema do **Caixeiro Viajante**:
   0 & 1 & 0 & 0 & 0 & 1 & 0
   \end{bmatrix}
   $$
-  - **Binária:** $a_{ij} = 1$ se o arco $(i,j)$ está na rota.
+  - $x_{ij} = 1$ se o arco $(i,j)$ está na rota.
     - Desperdício de memória, $O(n^2)$.
     - Evita simetrias, mas não é eficiente para manipulação.
     - Adequada para abordagem por programação matemática.
@@ -292,9 +292,32 @@ Exemplo de representação para o problema do **Caixeiro Viajante**:
 
 ![bg right:25% 90%](images/BPP.drawio.svg)
 
+<!-- _footer: ' ' -->
+
+---
+
+- **Lista de Scores:** $p_i$ é a prioridade de adicionar o item $i$ em um pacote.
+  - [0.5, 0.2, 0.8, 0.1, 0.3, 0.7, 0.9, 0.4]
+  - Uma solução é obtida ordenando os índices de acordo com os scores e adicionando os itens em ordem.
+  - Representações desse tipo precisam de um método construtivo para **decodificar** a solução, geralmente se usa um método guloso (`first-fit`, `best-fit`, etc).
+  - Muito flexível, mas difícil de interpretar e manipular.
+  - Muitas simetrias, uma **infinidade** de scores podem representar a mesma solução.
+  - Adequada para abordagens baseadas em população.
+  - Pode não ser capaz de representar **todas** as soluções possíveis.
 ---
 - **Matriz de Adjacência:**
-  - **Binária:** $a_{ij} = 1$ se os items $i$ e $j$ estão no mesmo pacote.
+  $$ \scriptsize
+  X = \begin{bmatrix}
+  0 & 1 & 1 & 0 & 0 & 0\\
+  1 & 0 & 1 & 0 & 0 & 0\\
+  1 & 1 & 0 & 0 & 0 & 0\\
+  0 & 0 & 0 & 0 & 0 & 1\\
+  0 & 0 & 0 & 0 & 0 & 0\\
+  0 & 0 & 0 & 1 & 0 & 0
+  \end{bmatrix}
+  $$
+
+  - $x_{ij} = 1$ se os items $i$ e $j$ estão no mesmo pacote.
     - Desperdício de memória, complexidade $O(n^2)$.
     - Evita simetrias, mas é difícil de interpretar, manipular e avaliar.
 
@@ -319,7 +342,7 @@ O que faz das metaheurísticas uma abordagem genérica é o fato de serem projet
 Em geral, usamos espaços de busca para descrever de forma metafórica o funcionamento de uma metaheurística.
 - Gráfico 2D: Espaço de busca x Qualidade da solução.
 - Gráfico mapa de calor: Espaço de busca (2D) x Função objetivo (gradiente de cor). 
-![bg left:55% ](images/heatmap.png)
+![bg left:55%  fit](images/heatmap.png)
 ---
 ### Função Objetivo
 
@@ -393,7 +416,7 @@ A maior parte das metaheurísticas usam a busca local como um componente fundame
 
 
 
-![bg right:32% height:95%](images/hillclimb.drawio.svg)
+![bg right:32% height:75%](images/hillclimb.drawio.svg)
 
 - A solução inicial pode ser gerada por um método construtivo ou dada como entrada.
 - A `busca_local` explora a vizinhança da solução atual e, caso encontre uma solução melhor, atualiza a solução atual e retorna `True`.
@@ -410,15 +433,20 @@ A maior parte das metaheurísticas usam a busca local como um componente fundame
 ---
 ### Intensificação vs Diversificação
 <!-- _footer: ' ' -->
-Um conceito que lidamos no projeto de metaheurísticas é a **intensificação** vs **diversificação**.
 
 - **Intensificação:** Concentrar a busca em torno de regiões promissoras do espaço de busca.
 - **Diversificação:** Explorar diferentes regiões do espaço de busca para evitar ficar preso em ótimos locais.
 
 - Se um método demora muito para apresentar um bom resultado, pode ser que ele esteja muito diversificado
 - Se um método não apresenta melhores soluções mesmo aumentando o número de iterações, pode ser que ele esteja muito intensificado.
-> O desafio é encontrar um equilíbrio entre intensificação e diversificação para encontrar o ótimo global.
+
 ---
+
+O **desafio** é encontrar um equilíbrio entre intensificação e diversificação para encontrar o **ótimo global**.
+--
+
+---
+
 ### Metaheurísticas Populares
 Há muitas metaheurísticas diferentes, cada uma com suas próprias características e aplicações.
 - **s-Metaheurísticas**: Baseados em uma solução corrente:
