@@ -1071,8 +1071,10 @@ class Metaheuristics:
         ite = 0
         while ite < max_tries:
             pop = [generate_solution(D) for _ in range(N)]
+            #remover None values
+            pop = [sol for sol in pop if sol]
             pop.sort(key=lambda s: s.objective)
-            if not best or pop[0].objective < best.objective:
+            if not best or pop[0].objective + 1e-3 < best.objective:
                 best = pop[0]
                 ite = 0
                 if __debug__: print('DEA', best.objective)
@@ -1269,15 +1271,24 @@ if __name__ == '__main__':
     # sol = meta.VNS(flp,1000)
     # meta.GRASP(flp,100, False, 2)
     # meta.GLS(flp,100,alpha=0.7, beta=1.2)
-    meta.Tabu(flp,100,tenure=30)
+    # meta.Tabu(flp,100,tenure=30)
+    # meta.DEA(flp,max_tries=100,N=10,K=3)
     # meta.SA(flp,1000)
-    # bm= Benchmark()
+    bm= Benchmark()
     # # param = [{'max_tries':100, 'first_imp':True}, {'max_tries':100, 'first_imp':False}]
     # # bm.add_method(meta.RMS, param)
     # # bm.add_method(meta.ILS, param)
     # # bm.add_method(meta.VNS, param)
     # # bm.add_method(meta.GRASP, param)
-    # bm.seeds = [7,13,17]
+    bm.seeds = [7,13,17]
     # bm.add_method(meta.GRASP, [{'max_tries':t, 'first_imp':fi, 'K':k} 
     #                            for t in [10, 50, 100] for k in [2, 5, 10] for fi in [True, False]])
-    # bm.run()
+    bm.add_method(meta.DEA, [{'max_tries':10, 
+                              'N':n, 
+                              'K':k, 
+                              'alpha':a,
+                              'first_imp':True} 
+                            for n in [50, 100] for k in  [5, 10]
+                            for a in [0.3, 0.5, 0.7]])
+                             
+    bm.run()
