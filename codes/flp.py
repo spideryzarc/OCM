@@ -1010,6 +1010,81 @@ class Metaheuristics:
                     ite = 0
                     if __debug__: print('SA', best.objective)
             T0 *= alpha
+    #end SA
+    
+    @staticmethod
+    def DEA(flp: FLP, max_tries=1000, first_imp=True, N=1000, K=100, alpha=0.5):
+        ''' Distribution Estimation Algorithm, a metaheuristic that uses a probabilistic model to generate new solutions
+        Parameters:
+            flp: FLP - the problem to be solved
+            max_tries: int (default 1000) maximum number of generations without improvement
+            first_imp: bool (default True) if True the local search will use first improvement
+            N: int (default 1000) number of solutions in the population
+            K: int (default 100) number of solutions used to generate a distribution
+            alpha: float (default 0.5) weight of the marginal distribution in the new distribution
+        Returns:
+            FLP_Solution or None - a feasible solution or None if it was not possible to create a feasible solution
+        '''
+        
+        ls = LocalSearch(flp)
+        # probability distribution of facilities initialization with uniform distribution
+        D =  np.ones(flp.num_facilities)/flp.num_facilities
+        
+        best= None
+        
+        def generate_solution(D: np.ndarray)->FLP_Solution:
+            '''Generate a new solution based on the probability distribution D
+            Parameters:
+                D: np.ndarray - the probability distribution of facilities
+            Returns:
+                FLP_Solution - a new solution
+            '''
+            sol = FLP_Solution(flp)
+            for _ in range(100):
+                sol.assigned = np.random.choice(flp.num_facilities, flp.num_customers, p=D)
+                sol.remaining = flp.supply - np.bincount(sol.assigned, weights=flp.demand, minlength=flp.num_facilities)
+                if np.all(sol.remaining >= 0):
+                    break
+            else:
+                return None
+            sol.facility_customers_count = np.bincount(sol.assigned, minlength=flp.num_facilities)
+            sol.evaluate()
+            ls.VND(sol, first_imp)
+            assert sol.is_valid(), 'Invalid solution'
+            return sol
+        
+        def maginal_distribution(pop: list[FLP_Solution])->np.ndarray:
+            '''Calculate the marginal distribution of facilities
+            Parameters:
+                pop: list[FLP_Solution] - the population of solutions
+            Returns:
+                np.ndarray - the marginal distribution of facilities
+            '''
+            # calculate the frequency of each facility in the population
+            freq = np.zeros(flp.num_facilities)
+            for sol in pop:
+                freq += sol.facility_customers_count
+            # normalize the frequency
+            freq /= np.sum(freq)
+            return freq
+        # main loop
+        ite = 0
+        while ite < max_tries:
+            pop = [generate_solution(D) for _ in range(N)]
+            pop.sort(key=lambda s: s.objective)
+            if not best or pop[0].objective < best.objective:
+                best = pop[0]
+                ite = 0
+                if __debug__: print('DEA', best.objective)
+            else:
+                ite += 1
+                
+            # update the probability distribution
+            pop = pop[:K]
+            M = maginal_distribution(pop)
+            D = alpha*M + (1-alpha)*D  
+            # end main loop
+        return best
         
     
 #end_Metaheuristics
