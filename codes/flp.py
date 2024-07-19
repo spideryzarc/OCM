@@ -1013,7 +1013,7 @@ class Metaheuristics:
     #end SA
     
     @staticmethod
-    def DEA(flp: FLP, max_tries=1000, first_imp=True, N=1000, K=100, alpha=0.5):
+    def DEA(flp: FLP, max_tries=1000, first_imp=True, N=1000, K=100, alpha=0.5,elitist = True):
         ''' Distribution Estimation Algorithm, a metaheuristic that uses a probabilistic model to generate new solutions
         Parameters:
             flp: FLP - the problem to be solved
@@ -1022,6 +1022,7 @@ class Metaheuristics:
             N: int (default 1000) number of solutions in the population
             K: int (default 100) number of solutions used to generate a distribution
             alpha: float (default 0.5) weight of the marginal distribution in the new distribution
+            elitist: bool (default True) if True the best solution is always kept
         Returns:
             FLP_Solution or None - a feasible solution or None if it was not possible to create a feasible solution
         '''
@@ -1040,17 +1041,45 @@ class Metaheuristics:
                 FLP_Solution - a new solution
             '''
             sol = FLP_Solution(flp)
-            for _ in range(100):
-                sol.assigned = np.random.choice(flp.num_facilities, flp.num_customers, p=D)
-                sol.remaining = flp.supply - np.bincount(sol.assigned, weights=flp.demand, minlength=flp.num_facilities)
-                if np.all(sol.remaining >= 0):
-                    break
-            else:
-                return None
-            sol.facility_customers_count = np.bincount(sol.assigned, minlength=flp.num_facilities)
-            sol.evaluate()
-            ls.VND(sol, first_imp)
+            sol.objective = 0
+            # for _ in range(100):
+            #     sol.assigned = np.random.choice(flp.num_facilities, flp.num_customers, p=D)
+            #     sol.remaining = flp.supply - np.bincount(sol.assigned, weights=flp.demand, minlength=flp.num_facilities)
+            #     if np.all(sol.remaining >= 0):                    
+            #         break
+            # else:
+            #     # print('Invalid solution')
+            #     return None
+            
+            assigned_customers = 0
+            # greedy assignment
+            while assigned_customers < flp.num_customers:
+                # choose a facility to assign the next customer
+                j = np.random.choice(flp.num_facilities, p=D)
+                while True:
+                    # generate a list of customers that can be assigned to facility j
+                    customers = (i for i in range(flp.num_customers) if sol.assigned[i] == -1 and sol.remaining[j] >= flp.demand[i])
+                    # find the best customer to assign to facility j
+                    try:
+                        i = min(customers, key=lambda i: flp.assignment_cost[j, i])
+                    except ValueError:
+                        # if there is no customer to be assigned to facility j go to the next facility
+                        break
+                    # assign customer i to facility j
+                    sol.assigned[i] = j
+                    sol.facility_customers_count[j] += 1
+                    sol.remaining[j] -= flp.demand[i]
+                    sol.objective += flp.assignment_cost[j, i]
+                    # if the facility was closed, add the opening cost
+                    if sol.facility_customers_count[j] == 1:
+                        sol.objective += flp.opening_cost[j]
+                    assigned_customers += 1
+                # end_while
+
+            # sol.facility_customers_count = np.bincount(sol.assigned, minlength=flp.num_facilities)
+            # sol.evaluate()
             assert sol.is_valid(), 'Invalid solution'
+            ls.VND(sol, first_imp)
             return sol
         
         def maginal_distribution(pop: list[FLP_Solution])->np.ndarray:
@@ -1083,8 +1112,12 @@ class Metaheuristics:
                 
             # update the probability distribution
             pop = pop[:K]
+            if elitist and best.objective < pop[0].objective:
+                pop.append(best)
+            # print(' '.join(f'{s.objective:.2f}' for s in pop))
             M = maginal_distribution(pop)
             D = alpha*M + (1-alpha)*D  
+            # print(D)
             # end main loop
         return best
         
@@ -1240,7 +1273,8 @@ class Benchmark:
 
 #### main ####
 if __name__ == '__main__':
-    flp = FLP(filename='codes/instances/cap61')
+    # flp = FLP(filename='codes/instances/cap61')
+    flp = FLP(filename='codes/instances/p1')
     # print(flp)
     # bf = BruteForce(flp)
     # sol = bf.solve(10)
@@ -1272,8 +1306,8 @@ if __name__ == '__main__':
     # meta.GRASP(flp,100, False, 2)
     # meta.GLS(flp,100,alpha=0.7, beta=1.2)
     # meta.Tabu(flp,100,tenure=30)
-    # meta.DEA(flp,max_tries=100,N=10,K=3)
-    # meta.SA(flp,1000)
+    # meta.DEA(flp,max_tries=10,N=10,K=3,alpha=0.3)
+    # meta.SA(flp,100)
     bm= Benchmark()
     # # param = [{'max_tries':100, 'first_imp':True}, {'max_tries':100, 'first_imp':False}]
     # # bm.add_method(meta.RMS, param)
@@ -1288,7 +1322,7 @@ if __name__ == '__main__':
                               'K':k, 
                               'alpha':a,
                               'first_imp':True} 
-                            for n in [50, 100] for k in  [5, 10]
+                            for n in [10, 50] for k in  [3, 5]
                             for a in [0.3, 0.5, 0.7]])
                              
-    bm.run()
+    # bm.run()
