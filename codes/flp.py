@@ -1120,7 +1120,124 @@ class Metaheuristics:
             # print(D)
             # end main loop
         return best
+    #end DEA
+    
+    @staticmethod
+    def GA(flp: FLP, max_tries=10, first_imp=True, N=100, M=10,K=5 , elite=True, mutation_rate=0.1):
+        '''Genetic Algorithm, a metaheuristic that uses genetic operators to evolve the population
+        Parameters:
+            flp: FLP - the problem to be solved
+            max_tries: int (default 10) maximum number of generations without improvement
+            first_imp: bool (default True) if True the local search will use first improvement
+            N: int (default 100) number of solutions in the population
+            M: int (default 10) number of solutions to be selected for crossover
+            K: int (default 5) number of solutions per tournament
+            elite: bool (default True) if True the best solution is always kept
+            mutation_rate: float (default 0.1) probability of a mutation'''
+            
+        ls = LocalSearch(flp)
+        #nested function to generate a new solution by crossover
+        def crossover(sol1: FLP_Solution, sol2: FLP_Solution)->FLP_Solution:
+            '''Generate a new solution by crossover
+            Parameters:
+                sol1: FLP_Solution - the first parent
+                sol2: FLP_Solution - the second parent
+            Returns:
+                FLP_Solution - the child solution
+            '''
+            child = FLP_Solution(flp)
+            for _ in range(100):
+                child.reset()
+                child.assigned = np.where(np.random.rand(flp.num_customers) < 0.5, sol1.assigned, sol2.assigned)
+                child.remaining = flp.supply - np.bincount(child.assigned, weights=flp.demand, minlength=flp.num_facilities)
+                if np.all(child.remaining >= 0):
+                    break
+            else:
+                print('No valid child')
+                return None
+            child.facility_customers_count = np.bincount(child.assigned, minlength=flp.num_facilities)
+            child.evaluate()
+            assert child.is_valid(), 'Invalid solution'
+            ls.VND(child, first_imp)
+            return child
+        #end_crossover
         
+        #nested function to generate a new solution by mutation
+        def mutation(sol: FLP_Solution)->FLP_Solution:
+            '''Generate a new solution by mutation
+            Parameters:
+                sol: FLP_Solution - the parent solution
+            Returns:
+                FLP_Solution - the child solution
+            '''
+            child = FLP_Solution(flp)
+            for _ in range(100):
+                child.reset()
+                child.assigned[:] = sol.assigned
+                child.remaining[:] = sol.remaining
+                child.facility_customers_count[:] = sol.facility_customers_count
+                i = np.random.randint(flp.num_customers)
+                j = np.random.choice(np.flatnonzero(child.remaining >= flp.demand[i]))
+                child.remaining[child.assigned[i]] += flp.demand[i]
+                child.facility_customers_count[child.assigned[i]] -= 1
+                child.assigned[i] = j
+                child.remaining[j] -= flp.demand[i]
+                child.facility_customers_count[j] += 1
+                child.evaluate()
+                if child.is_valid():
+                    break
+            else:
+                print('No valid child')
+                return None
+            assert child.is_valid(), 'Invalid solution'
+            return child
+        #end_mutation
+        
+        # initialize the population
+        ch = ConstructionHeuristics(flp)
+        pop = [ch.greedy(rd_opening=True) for _ in range(N)]
+        #remove None values
+        pop = [sol for sol in pop if sol]
+        for sol in pop:
+            ls.VND(sol, first_imp)
+        best = min(pop, key=lambda s: s.objective)
+        if __debug__: print('GA', best.objective)
+        #main loop
+        ite = 0
+        while ite < max_tries:
+            selected = []
+            for _ in range(M):
+                tournament = np.random.choice(pop, K, replace=False)
+                champion = min(tournament, key=lambda s: s.objective)
+                selected.append(champion)
+                pop.remove(champion)
+            if elite and best not in selected:
+                selected.append(best)
+            pop = selected
+            #crossover
+            for _ in range(N-M):
+                sol1, sol2 = np.random.choice(pop, 2, replace=False)
+                child = crossover(sol1, sol2)
+                if child:
+                    pop.append(child)
+            #mutation
+            for _ in range(int(N*mutation_rate)):
+                sol = np.random.choice(pop)
+                child = mutation(sol)
+                if child:
+                    pop.append(child)
+            nb = min(pop, key=lambda s: s.objective)
+            if nb.objective + 1e-6 < best.objective:
+                best = nb
+                ite = 0
+                if __debug__: print('GA', best.objective)
+            ite += 1
+        return best
+    #end_GA
+            
+                
+             
+            
     
 #end_Metaheuristics
 
@@ -1273,8 +1390,8 @@ class Benchmark:
 
 #### main ####
 if __name__ == '__main__':
-    # flp = FLP(filename='codes/instances/cap61')
-    flp = FLP(filename='codes/instances/p1')
+    flp = FLP(filename='codes/instances/cap61')
+    # flp = FLP(filename='codes/instances/p1')
     # print(flp)
     # bf = BruteForce(flp)
     # sol = bf.solve(10)
@@ -1306,7 +1423,8 @@ if __name__ == '__main__':
     # meta.GRASP(flp,100, False, 2)
     # meta.GLS(flp,100,alpha=0.7, beta=1.2)
     # meta.Tabu(flp,100,tenure=30)
-    # meta.DEA(flp,max_tries=10,N=10,K=3,alpha=0.3)
+    # meta.DEA(flp,max_tries=10,N=10,K=3,alpha=0.5)
+    meta.GA(flp,N=10,M=5,K=2,elite=True,mutation_rate=0.1, max_tries=100)
     # meta.SA(flp,100)
     bm= Benchmark()
     # # param = [{'max_tries':100, 'first_imp':True}, {'max_tries':100, 'first_imp':False}]
