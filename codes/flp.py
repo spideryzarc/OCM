@@ -189,7 +189,13 @@ class FLP_Solution:
             self.objective -= self.flp.opening_cost[j]
         self.objective -= self.flp.assignment_cost[j, i]
         return j
+    
+    def __eq__(self, value: object) -> bool:
+        if not isinstance(value, FLP_Solution):
+            return False
+        return np.all(self.assigned == value.assigned)
 
+#end of class FLP_Solution
 
 class BruteForce:
 
@@ -1123,7 +1129,7 @@ class Metaheuristics:
     #end DEA
     
     @staticmethod
-    def GA(flp: FLP, max_tries=10, first_imp=True, N=100, M=10,K=5 , elite=True, mutation_rate=0.1):
+    def GA(flp: FLP, max_tries=10, first_imp=True, N=100, M=10,K=5 , elite=True, mutation_rate=0.1, vnd=True):
         '''Genetic Algorithm, a metaheuristic that uses genetic operators to evolve the population
         Parameters:
             flp: FLP - the problem to be solved
@@ -1133,7 +1139,9 @@ class Metaheuristics:
             M: int (default 10) number of solutions to be selected for crossover
             K: int (default 5) number of solutions per tournament
             elite: bool (default True) if True the best solution is always kept
-            mutation_rate: float (default 0.1) probability of a mutation'''
+            mutation_rate: float (default 0.1) probability of a mutation
+            vnd: bool (default True) if True the local search will use VND
+            '''
             
         ls = LocalSearch(flp)
         #nested function to generate a new solution by crossover
@@ -1158,7 +1166,8 @@ class Metaheuristics:
             child.facility_customers_count = np.bincount(child.assigned, minlength=flp.num_facilities)
             child.evaluate()
             assert child.is_valid(), 'Invalid solution'
-            ls.VND(child, first_imp)
+            if vnd:
+                ls.VND(child, first_imp)
             return child
         #end_crossover
         
@@ -1195,11 +1204,17 @@ class Metaheuristics:
         
         # initialize the population
         ch = ConstructionHeuristics(flp)
-        pop = [ch.greedy(rd_opening=True) for _ in range(N)]
-        #remove None values
-        pop = [sol for sol in pop if sol]
-        for sol in pop:
-            ls.VND(sol, first_imp)
+        pop = []
+        for _ in range(10*N):
+            sol = ch.random_assignment_solution()
+            if sol:
+                if vnd:
+                    ls.VND(sol, first_imp)
+                if sol not in pop:
+                    pop.append(sol)
+                    if len(pop) >= N:
+                        break
+       
         best = min(pop, key=lambda s: s.objective)
         if __debug__: print('GA', best.objective)
         #main loop
@@ -1214,12 +1229,16 @@ class Metaheuristics:
             if elite and best not in selected:
                 selected.append(best)
             pop = selected
+            # print(' '.join(f'{s.objective:.2f}' for s in pop))
+            # print()
             #crossover
-            for _ in range(N-M):
+            for _ in range(10*N):
                 sol1, sol2 = np.random.choice(pop, 2, replace=False)
                 child = crossover(sol1, sol2)
-                if child:
+                if child and child not in pop:
                     pop.append(child)
+                    if len(pop) >= N:
+                        break
             #mutation
             for _ in range(int(N*mutation_rate)):
                 sol = np.random.choice(pop)
@@ -1232,6 +1251,7 @@ class Metaheuristics:
                 ite = 0
                 if __debug__: print('GA', best.objective)
             ite += 1
+            
         return best
     #end_GA
             
@@ -1424,7 +1444,7 @@ if __name__ == '__main__':
     # meta.GLS(flp,100,alpha=0.7, beta=1.2)
     # meta.Tabu(flp,100,tenure=30)
     # meta.DEA(flp,max_tries=10,N=10,K=3,alpha=0.5)
-    meta.GA(flp,N=10,M=5,K=2,elite=True,mutation_rate=0.1, max_tries=100)
+    meta.GA(flp,N=20,M=10,K=2,elite=True,mutation_rate=0.3, max_tries=100)
     # meta.SA(flp,100)
     bm= Benchmark()
     # # param = [{'max_tries':100, 'first_imp':True}, {'max_tries':100, 'first_imp':False}]
