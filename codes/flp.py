@@ -1243,7 +1243,7 @@ class Metaheuristics:
             for _ in range(int(N*mutation_rate)):
                 sol = np.random.choice(pop)
                 child = mutation(sol)
-                if child:
+                if child and child not in pop:
                     pop.append(child)
             nb = min(pop, key=lambda s: s.objective)
             if nb.objective + 1e-6 < best.objective:
@@ -1254,7 +1254,129 @@ class Metaheuristics:
             
         return best
     #end_GA
+    
+    @staticmethod
+    def SS(flp: FLP, max_tries=1000, first_imp=True, N=100, M=5, elitist=True):
+        """ Scatter Search, a metaheuristic that uses a reference set to generate new solutions
+        Parameters:
+            flp: FLP - the problem to be solved
+            max_tries: int (default 1000) maximum number of generations without improvement
+            first_imp: bool (default True) if True the local search will use first improvement
+            N: int (default 100) number of solutions in the population
+            M: int (default 5) number of solutions to be selected for crossover
+            elitist: bool (default True) if True the best solution is always kept"""
             
+        def dist(sol1: FLP_Solution, sol2: FLP_Solution)->float:
+            '''Calculate the distance between two solutions
+            Parameters:
+                sol1: FLP_Solution - the first solution
+                sol2: FLP_Solution - the second solution
+            Returns:
+                float - the euclidean distance between the assignments costs of the solutions
+            '''
+            costs1 = flp.assignment_cost[sol1.assigned, np.arange(flp.num_customers)]
+            costs2 = flp.assignment_cost[sol2.assigned, np.arange(flp.num_customers)]
+            return np.linalg.norm(costs1-costs2)
+        
+        def filter_reference_set(ref: list[FLP_Solution])->list[FLP_Solution]:
+            '''Filter the reference set by removing the solutions that are too similar to sol
+            Parameters:
+                ref: list[FLP_Solution] - the reference set
+            Returns:
+                list[FLP_Solution] - the filtered reference set
+            '''
+            new_ref = []
+            #calculate the distance matrix
+            d = np.zeros(shape=(len(ref), len(ref)))
+            min_dist = np.zeros(len(ref))
+            for i in range(len(ref)):
+                for j in range(i+1, len(ref)):
+                    d[i,j] = d[j,i] = dist(ref[i], ref[j])
+            if elitist:
+                #start with the best solution
+                i = np.argmin([s.objective for s in ref])
+                new_ref.append(ref[i])
+                ref[i] = None
+                min_dist[:] = d[i]
+            else:
+                #start with two most different solutions
+                i, j = np.unravel_index(np.argmax(d), d.shape)
+                new_ref.append(ref[i])
+                new_ref.append(ref[j])
+                ref[i] = ref[j] = None
+                min_dist[:] = np.minimum(d[i], d[j])
+            #add the remaining solutions
+            while len(new_ref) < M:
+                i = np.argmax(min_dist)
+                new_ref.append(ref[i])
+                ref[i] = None
+                min_dist = np.minimum(min_dist, d[i])
+            # end_while
+            return new_ref
+        #end_filter_reference_set
+        
+         #nested function to generate a new solution by crossover
+        def crossover(sol1: FLP_Solution, sol2: FLP_Solution, alpha=.5)->FLP_Solution:
+            '''Generate a new solution by crossover
+            Parameters:
+                sol1: FLP_Solution - the first parent
+                sol2: FLP_Solution - the second parent
+                alpha: float (default .5) weight of the first parent in the child solution
+            Returns:
+                FLP_Solution - the child solution
+            '''
+            child = FLP_Solution(flp)
+            for _ in range(100):
+                child.reset()
+                child.assigned = np.where(np.random.rand(flp.num_customers) < alpha, sol1.assigned, sol2.assigned)
+                child.remaining = flp.supply - np.bincount(child.assigned, weights=flp.demand, minlength=flp.num_facilities)
+                if np.all(child.remaining >= 0):
+                    break
+            else:
+                print('No valid child')
+                return None
+            child.facility_customers_count = np.bincount(child.assigned, minlength=flp.num_facilities)
+            child.evaluate()
+            assert child.is_valid(), 'Invalid solution'
+            if child != sol1 and child != sol2:
+                ls.VND(child, first_imp)
+            return child
+        #end_crossover
+        
+        ls = LocalSearch(flp)
+        ch = ConstructionHeuristics(flp)
+        #initialize the population
+        pop = [ch.random_assignment_solution() for _ in range(N)]
+        # remove None values
+        pop = [sol for sol in pop if sol]
+        for sol in pop:
+            ls.VND(sol, first_imp)
+        best = min(pop, key=lambda s: s.objective)
+        if __debug__: print('SS', best.objective)
+        #main loop
+        ite = 0
+        while ite < max_tries:
+            #generate a new reference set
+            ref = filter_reference_set(pop)
+            pop.clear()
+            pop.extend(ref)
+            #print(' '.join(f'{s.objective:.2f}' for s in ref))
+            #generate new solutions by crossover
+            for _ in range(N):
+                sol1, sol2 = np.random.choice(ref, 2, replace=False)
+                child = crossover(sol1, sol2, np.random.random()*.6+.2)
+                if child and child not in pop:
+                    pop.append(child)
+                    if child.objective < best.objective:
+                        best = child
+                        ite = 0
+                        if __debug__: print('SS', best.objective)
+            ite += 1
+        # end main loop
+        return best
+    #end_SS
+                           
+                
                 
              
             
@@ -1444,7 +1566,8 @@ if __name__ == '__main__':
     # meta.GLS(flp,100,alpha=0.7, beta=1.2)
     # meta.Tabu(flp,100,tenure=30)
     # meta.DEA(flp,max_tries=10,N=10,K=3,alpha=0.5)
-    meta.GA(flp,N=20,M=10,K=2,elite=True,mutation_rate=0.3, max_tries=100)
+    # meta.GA(flp,N=200,M=10,K=20,elite=True,mutation_rate=0.3, max_tries=100,vnd=False)
+    meta.SS(flp,max_tries=100)
     # meta.SA(flp,100)
     bm= Benchmark()
     # # param = [{'max_tries':100, 'first_imp':True}, {'max_tries':100, 'first_imp':False}]
