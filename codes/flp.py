@@ -440,11 +440,14 @@ class LocalSearch:
             return imp
         else:
             # find the best improvement
-            i, j = min(pairs, key=lambda p: delta(*p))
-            d = delta(i, j)
-            if d < -1e-6:
-                commit(i, j, d)
-                return True
+            try:
+                i, j = min(pairs, key=lambda p: delta(*p))
+                d = delta(i, j)
+                if d < -1e-6:
+                    commit(i, j, d)
+                    return True
+            except ValueError:
+                pass
         return False
 
     def replace(self, sol: FLP_Solution, first_improvement=True) -> bool:
@@ -504,11 +507,14 @@ class LocalSearch:
             return imp
         else:
             # find the best improvement
-            i, j = min(pairs, key=lambda p: delta(*p))
-            d = delta(i, j)
-            if d < -1e-6:
-                commit(i, j, d)
-                return True
+            try:
+                i, j = min(pairs, key=lambda p: delta(*p))
+                d = delta(i, j)
+                if d < -1e-6:
+                    commit(i, j, d)
+                    return True
+            except ValueError:
+                pass
         return False
 
     def exchange_facilities(self, sol: FLP_Solution, first_improvement=True) -> bool:
@@ -1545,10 +1551,13 @@ class Benchmark:
         param_names = list(param_names)
 
         if dry:
+            count = 0
             for method, param_generator, flp in runs:
                 for args in param_generator:
                     for s in self.seeds:
-                        print(method.__name__, flp.filename, s, args)
+                        print(f'{method.__name__}, {flp.filename}, {s}, args:', args)
+                        count += 1
+            print(f'Total of {count} runs')
             return
 
         with open(self.output, 'w') as f:
@@ -1577,7 +1586,7 @@ class Benchmark:
 
 #### main ####
 if __name__ == '__main__':
-    flp = FLP(filename='codes/instances/cap61')
+    # flp = FLP(filename='codes/instances/cap61')
     # flp = FLP(filename='codes/instances/p1')
     # print(flp)
     # bf = BruteForce(flp)
@@ -1600,7 +1609,7 @@ if __name__ == '__main__':
     # print(sol)
     # fix random seed
     # np.random.seed(0)
-    meta = Metaheuristics()
+    # meta = Metaheuristics()
     # sol = meta.RMS(100)
     # cProfile.run('sol = meta.RMS(500)', sort='tottime')
     # sol = meta.ILS(1000)
@@ -1612,7 +1621,7 @@ if __name__ == '__main__':
     # meta.Tabu(flp,100,tenure=30)
     # meta.DEA(flp,max_tries=10,N=10,K=3,alpha=0.5)
     # meta.GA(flp,N=200,M=10,K=20,elite=True,mutation_rate=0.3, max_tries=100,vnd=False)
-    meta.SS(flp,max_tries=100)
+    # meta.SS(flp,max_tries=100)
     # meta.SA(flp,100)
     bm = Benchmark(n_seeds=5)
 
@@ -1621,7 +1630,7 @@ if __name__ == '__main__':
     K = [2, 5, 10]
     alpha = [0.3, 0.5, 0.7]
     beta = [1.05, 1.1, 1.2]
-
+    meta = Metaheuristics()
     bm.add_method(meta.RMS, [{'max_tries': t, 'first_imp': fi}
                   for t in max_tries for fi in first_imp])
     bm.add_method(meta.ILS, [{'max_tries': t, 'first_imp': fi}
@@ -1637,4 +1646,4 @@ if __name__ == '__main__':
     
 
 
-    bm.run(dry=False)
+    bm.run(dry=False,run_by='instance')
